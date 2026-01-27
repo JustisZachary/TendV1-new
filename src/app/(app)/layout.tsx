@@ -1,12 +1,29 @@
+"use client";
+
+import { usePathname } from "next/navigation";
+
 export default function AppLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const hideSidebar = pathname === "/form";
+
+  if (hideSidebar) {
+    return (
+      <div className="min-h-screen bg-gray-50 text-gray-900">
+        <main className="px-6 py-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 lg:grid-cols-[88px_1fr]">
-        <aside className="border-b border-gray-200 bg-gray-100 px-4 py-6 lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
+      <div className="grid w-full grid-cols-[88px_1fr]">
+        <aside className="sticky top-0 h-screen border-r border-gray-200 bg-gray-100 px-4 py-6">
           <div className="flex h-full flex-col items-center justify-between">
             <div className="flex flex-col items-center gap-5">
               <a
@@ -25,13 +42,13 @@ export default function AppLayout({
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    d="M4 8h16M6 8l1.8 10.5a2 2 0 0 0 2 1.5h4.4a2 2 0 0 0 2-1.5L18 8M9 12h6"
+                    d="M3 13l2-2h14l2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6Zm0 0h6l2 3h2l2-3h6"
                   />
                 </svg>
               </a>
               <a
                 aria-label="New submission"
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-900 text-white shadow-sm transition hover:bg-gray-800"
+                className="flex h-[38px] w-[38px] items-center justify-center rounded-2xl bg-gray-900 text-white shadow-sm transition hover:bg-gray-800"
                 href="/form"
               >
                 <svg
@@ -70,7 +87,7 @@ export default function AppLayout({
                 </svg>
               </a>
               <div className="h-px w-10 bg-gray-300" />
-              <nav className="flex flex-col items-center gap-3 text-gray-500">
+              <nav className="flex flex-col items-center gap-5 text-gray-500">
                 <a
                   aria-label="Calendar"
                   className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white"
@@ -175,7 +192,9 @@ export default function AppLayout({
             </a>
           </div>
         </aside>
-        <main className="px-6 py-8">{children}</main>
+        <main className="px-6 py-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );

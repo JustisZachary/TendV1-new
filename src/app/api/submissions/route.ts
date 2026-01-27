@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { extractTags, toTagString } from "@/lib/tags";
 
 type SubmissionPayload = {
   firstName?: string;
@@ -58,6 +59,9 @@ export async function POST(request: Request) {
     const consentToText = toBoolean(body.consentToText ?? "");
     const regularAttender = toBoolean(body.regularAttender ?? "");
 
+    const tagSource = `${body.helpTopic ?? ""} ${body.additionalDetails ?? ""}`;
+    const tags = extractTags(tagSource);
+
     const submission = await prisma.submission.create({
       data: {
         firstName: body.firstName ?? "",
@@ -71,6 +75,7 @@ export async function POST(request: Request) {
         primaryCampus: body.primaryCampus ?? "",
         regularAttender,
         additionalDetails: body.additionalDetails?.trim() || null,
+        tags: toTagString(tags),
       },
     });
 
