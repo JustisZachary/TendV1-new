@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Submission {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  firstName        String
+  lastName         String
+  email            String
+  phoneType        String
+  phoneNumber      String
+  consentToText    Boolean
+  birthdate        DateTime
+  helpTopic        String
+  primaryCampus    String
+  regularAttender  Boolean
+  additionalDetails String?
+}
