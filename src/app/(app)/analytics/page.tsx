@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/db";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
@@ -28,7 +29,7 @@ export default async function AnalyticsPage() {
 
   const totalRequests = submissions.length;
   const palette = ["#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00"];
-  const iconById: Record<TagId, JSX.Element> = {
+  const iconById: Record<TagId, ReactNode> = {
     marriage: (
       <svg
         aria-hidden="true"
