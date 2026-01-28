@@ -1,12 +1,30 @@
 import { prisma } from "@/lib/db";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+const polarToCartesian = (
+  centerX: number,
+  centerY: number,
+  radius: number,
+  angleInDegrees: number
+) => {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+};
+
 export default async function AnalyticsPage() {
-  const submissions = await prisma.submission.findMany({
-    select: {
-      tags: true,
-    },
-  });
+  const submissions = process.env.DATABASE_URL
+    ? await prisma.submission.findMany({
+        select: {
+          tags: true,
+        },
+      })
+    : [];
 
   const totalRequests = submissions.length;
   const palette = ["#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00"];
@@ -137,16 +155,32 @@ export default async function AnalyticsPage() {
       share: totalRequests ? count / totalRequests : 0,
     };
   });
-  const pieStops: string[] = [];
+  const slices = categoryTotals.map((category) => ({
+    ...category,
+    startAngle: 0,
+    endAngle: 0,
+  }));
   let currentAngle = 0;
-  categoryTotals.forEach((category) => {
-    const nextAngle = currentAngle + category.share * 360;
-    pieStops.push(`${category.color} ${currentAngle}deg ${nextAngle}deg`);
-    currentAngle = nextAngle;
+  slices.forEach((slice) => {
+    slice.startAngle = currentAngle;
+    slice.endAngle = currentAngle + slice.share * 360;
+    currentAngle = slice.endAngle;
   });
-  const pieBackground = totalRequests
-    ? `conic-gradient(${pieStops.join(", ")})`
-    : "conic-gradient(#e5e7eb 0deg 360deg)";
+
+  const center = 100;
+  const radius = 88;
+  const arcPath = (startAngle: number, endAngle: number) => {
+    const start = polarToCartesian(center, center, radius, endAngle);
+    const end = polarToCartesian(center, center, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+
+    return [
+      `M ${center} ${center}`,
+      `L ${start.x} ${start.y}`,
+      `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
+      "Z",
+    ].join(" ");
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
@@ -172,11 +206,38 @@ export default async function AnalyticsPage() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
           <div className="flex items-center justify-center">
-            <div
-              className="h-48 w-48 rounded-full"
-              style={{ background: pieBackground }}
-              aria-hidden="true"
-            />
+            <svg
+              className="h-48 w-48"
+              viewBox="0 0 200 200"
+              role="img"
+              aria-label="Keyword category distribution"
+            >
+              {totalRequests === 0 ? (
+                <circle cx="100" cy="100" r={radius} fill="#e5e7eb" />
+              ) : (
+                slices.map((slice) => (
+                  <path
+                    key={slice.id}
+                    d={arcPath(slice.startAngle, slice.endAngle)}
+                    fill={slice.color}
+                    className="transition-opacity hover:opacity-80"
+                  >
+                    <title>
+                      {slice.label}: {slice.count} request
+                      {slice.count === 1 ? "" : "s"} ({slice.percentage}%)
+                    </title>
+                  </path>
+                ))
+              )}
+              <circle
+                cx="100"
+                cy="100"
+                r={radius}
+                fill="none"
+                stroke="white"
+                strokeWidth="2"
+              />
+            </svg>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {categoryTotals.map((category) => (
