@@ -4,6 +4,8 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  // Supabase: Project Settings → Database → Connection string → URI (Transaction pooler, port 6543).
+  // Set DATABASE_URL in .env.local and in Vercel Environment Variables.
   url      = env("DATABASE_URL")
 }
 

@@ -2,6 +2,12 @@
 
 import { usePathname } from "next/navigation";
 
+const navItems = [
+  { href: "/calendar", label: "Calendar", path: "/calendar" },
+  { href: "/people", label: "People", path: "/people" },
+  { href: "/analytics", label: "Analytics", path: "/analytics" },
+] as const;
+
 export default function AppLayout({
   children,
 }: {
@@ -12,7 +18,7 @@ export default function AppLayout({
 
   if (hideSidebar) {
     return (
-      <div className="min-h-screen bg-gray-50 text-gray-900">
+      <div className="min-h-screen bg-[#f7f7f7] text-gray-900">
         <main className="px-6 py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
@@ -21,159 +27,14 @@ export default function AppLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="grid w-full grid-cols-[88px_1fr]">
-        <aside className="sticky top-0 h-screen border-r border-gray-200 bg-gray-100 px-4 py-6">
-          <div className="flex h-full flex-col items-center justify-between">
-            <div className="flex flex-col items-center gap-5">
-              <a
-                aria-label="Dashboard"
-                className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-gray-800 shadow-sm transition hover:bg-gray-50"
-                href="/dashboard"
-              >
-                <svg
-                  aria-hidden="true"
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M3 13l2-2h14l2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6Zm0 0h6l2 3h2l2-3h6"
-                  />
-                </svg>
-              </a>
-              <a
-                aria-label="New submission"
-                className="flex h-[38px] w-[38px] items-center justify-center rounded-2xl bg-gray-900 text-white shadow-sm transition hover:bg-gray-800"
-                href="/form"
-              >
-                <svg
-                  aria-hidden="true"
-                  className="h-6 w-6"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 5v14m-7-7h14"
-                  />
-                </svg>
-              </a>
-              <a
-                aria-label="Search"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl text-gray-600 transition hover:bg-white"
-                href="/search"
-              >
-                <svg
-                  aria-hidden="true"
-                  className="h-5 w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M11 4a7 7 0 0 1 5.292 11.546l3.081 3.081a1 1 0 0 1-1.414 1.414l-3.081-3.081A7 7 0 1 1 11 4z"
-                  />
-                </svg>
-              </a>
-              <div className="h-px w-10 bg-gray-300" />
-              <nav className="flex flex-col items-center gap-5 text-gray-500">
-                <a
-                  aria-label="Calendar"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white"
-                  href="/calendar"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 7V5m8 2V5M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
-                    />
-                  </svg>
-                </a>
-                <a
-                  aria-label="People"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white"
-                  href="/people"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 7a7 7 0 0 1 14 0"
-                    />
-                  </svg>
-                </a>
-                <a
-                  aria-label="Analytics"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white"
-                  href="/analytics"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4 20h16M7 16V9m5 7V6m5 10v-4"
-                    />
-                  </svg>
-                </a>
-                <a
-                  aria-label="Explore"
-                  className="flex h-10 w-10 items-center justify-center rounded-xl transition hover:bg-white"
-                  href="/explore"
-                >
-                  <svg
-                    aria-hidden="true"
-                    className="h-5 w-5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3a9 9 0 1 0 9 9 9 9 0 0 0-9-9Zm0 0c2.5 2.7 2.5 12.3 0 18m0-18c-2.5 2.7-2.5 12.3 0 18M3 12h18"
-                    />
-                  </svg>
-                </a>
-              </nav>
-            </div>
+    <div className="min-h-screen bg-[#f7f7f7] text-gray-900">
+      <div className="grid w-full grid-cols-[72px_1fr]">
+        <aside className="sticky top-0 flex h-screen flex-col border-r border-gray-200 bg-gray-100/90">
+          <div className="flex flex-1 flex-col items-center gap-1 py-5">
             <a
-              aria-label="Settings"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white"
-              href="/settings"
+              aria-label="Inbox"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+              href="/dashboard"
             >
               <svg
                 aria-hidden="true"
@@ -186,13 +47,123 @@ export default function AppLayout({
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8 3.5a7.94 7.94 0 0 0-.18-1.65l2.11-1.64-2-3.46-2.54 1a7.99 7.99 0 0 0-2.86-1.65l-.38-2.7H9.85l-.38 2.7a7.99 7.99 0 0 0-2.86 1.65l-2.54-1-2 3.46 2.11 1.64A7.94 7.94 0 0 0 4 12c0 .56.06 1.11.18 1.65l-2.11 1.64 2 3.46 2.54-1a7.99 7.99 0 0 0 2.86 1.65l.38 2.7h4.3l.38-2.7a7.99 7.99 0 0 0 2.86-1.65l2.54 1 2-3.46-2.11-1.64c.12-.54.18-1.09.18-1.65Z"
+                  d="M2 8l10 7 10-7M2 20h20a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2z"
                 />
               </svg>
             </a>
+            <a
+              aria-label="New submission"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-900 transition hover:bg-white"
+              href="/form"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 5v14m-7-7h14"
+                />
+              </svg>
+            </a>
+            <a
+              aria-label="Search"
+              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+              href="/search"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21 21l-5.2-5.2M11 5a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"
+                />
+              </svg>
+            </a>
+            <div className="my-2 h-px w-8 bg-gray-300" />
+            <nav className="flex flex-col items-center gap-0.5" aria-label="Main">
+              {navItems.map(({ href, label, path }) => {
+                const isActive = pathname === path;
+                return (
+                  <a
+                    key={path}
+                    aria-label={label}
+                    aria-current={isActive ? "page" : undefined}
+                    href={href}
+                    className="relative flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+                  >
+                    {path === "/calendar" && (
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M8 7V5m8 2V5M4 9h16M6 5h12a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"
+                        />
+                      </svg>
+                    )}
+                    {path === "/people" && (
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm-7 7a7 7 0 0 1 14 0"
+                        />
+                      </svg>
+                    )}
+                    {path === "/analytics" && (
+                      <svg
+                        aria-hidden="true"
+                        className="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M4 20h16M7 16V9m5 7V6m5 10v-4"
+                        />
+                      </svg>
+                    )}
+                    {isActive && (
+                      <span
+                        aria-hidden
+                        className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-400"
+                      />
+                    )}
+                  </a>
+                );
+              })}
+            </nav>
           </div>
         </aside>
-        <main className="px-6 py-8">
+        <main className="min-h-screen px-6 py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>

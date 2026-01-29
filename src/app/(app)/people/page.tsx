@@ -15,28 +15,39 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
       ? TAG_CATEGORIES.find((category) => category.id === selectedTag)?.id
       : null;
 
-  const submissions = await prisma.submission.findMany({
-    where: tagFilter ? { tags: { contains: `|${tagFilter}|` } } : undefined,
-    orderBy: { createdAt: "desc" },
-  });
+  let submissions: Awaited<
+    ReturnType<typeof prisma.submission.findMany>
+  > = [];
+  if (process.env.DATABASE_URL) {
+    try {
+      submissions = await prisma.submission.findMany({
+        where: tagFilter
+          ? { tags: { contains: `|${tagFilter}|` } }
+          : undefined,
+        orderBy: { createdAt: "desc" },
+      });
+    } catch {
+      submissions = [];
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl space-y-6">
       <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <p className="text-xs uppercase tracking-widest text-gray-400">
-          Dashboard
+        <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
+          DASHBOARD
         </p>
-        <h1 className="mt-2 text-2xl font-semibold">People</h1>
-        <p className="mt-3 text-sm text-gray-600">
+        <h1 className="mt-2 text-2xl font-bold text-gray-900">People</h1>
+        <p className="mt-2 text-sm text-gray-600">
           Review form submissions and their keyword tags.
         </p>
-        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs font-semibold">
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           <Link
             href="/people"
-            className={`rounded-full border px-3 py-1.5 ${
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               selectedTag === "all"
-                ? "border-gray-900 bg-gray-900 text-white"
-                : "border-gray-200 text-gray-600 hover:border-gray-300"
+                ? "bg-[#1e3a5f] text-white shadow-sm"
+                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
             All requests
@@ -45,10 +56,10 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
             <Link
               key={category.id}
               href={`/people?tag=${category.id}`}
-              className={`rounded-full border px-3 py-1.5 ${
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 selectedTag === category.id
-                  ? "border-blue-600 bg-blue-600 text-white"
-                  : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  ? "border-2 border-blue-400 bg-white text-gray-900"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
               {category.label}
@@ -59,41 +70,49 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
+          <h2 className="text-base font-semibold text-gray-900">
             Latest requests
           </h2>
-          <span className="text-xs text-gray-500">
+          <span className="text-sm text-gray-500">
             {submissions.length} total
           </span>
         </div>
 
-        <div className="mt-4 space-y-4">
+        <div className="mt-5 space-y-4">
           {submissions.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-              No requests match this tag yet.
+            <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+              {process.env.DATABASE_URL
+                ? "No requests match this tag yet."
+                : "No database connected. Form submissions are sent to Formspree. Connect a database to list them here."}
             </div>
           ) : (
             submissions.map((submission) => {
               const tags = parseTagString(submission.tags);
+              const details = submission.additionalDetails ?? "";
+              const snippet =
+                details.length > 80 ? `${details.slice(0, 80)}...` : details;
               return (
                 <div
                   key={submission.id}
-                  className="rounded-xl border border-gray-100 bg-gray-50 p-4"
+                  className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        {submission.firstName} {submission.lastName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {submission.email}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-600">
-                      {submission.helpTopic}
-                    </span>
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {submission.firstName} {submission.lastName}
+                    </p>
+                    {submission.helpTopic ? (
+                      <span className="rounded-full bg-[#1e3a5f] px-3 py-1 text-xs font-semibold text-white">
+                        {submission.helpTopic}
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <p className="mt-0.5 text-xs text-gray-500">
+                    {submission.email}
+                  </p>
+                  {snippet ? (
+                    <p className="mt-2 text-sm text-gray-700">{snippet}</p>
+                  ) : null}
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5">
                     {tags.length > 0 ? (
                       tags.map((tag) => {
                         const label =
@@ -103,23 +122,18 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
                         return (
                           <span
                             key={`${submission.id}-${tag}`}
-                            className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700"
+                            className="rounded-full bg-[#1e3a5f] px-3 py-1 text-xs font-semibold text-white"
                           >
                             {label}
                           </span>
                         );
                       })
                     ) : (
-                      <span className="rounded-full bg-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-600">
+                      <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-semibold text-gray-600">
                         Untagged
                       </span>
                     )}
                   </div>
-                  {submission.additionalDetails && (
-                    <p className="mt-3 text-sm text-gray-600">
-                      {submission.additionalDetails}
-                    </p>
-                  )}
                 </div>
               );
             })

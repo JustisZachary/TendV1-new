@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:migrate": "dotenv -e .env -- prisma migrate deploy"
   },
   "dependencies": {
     "@prisma/client": "^6.19.2",
+    "@supabase/supabase-js": "^2.93.2",
     "next": "16.1.5",
     "prisma": "^6.19.2",
     "react": "19.2.3",
@@ -20,6 +23,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.5",
     "tailwindcss": "^4",
