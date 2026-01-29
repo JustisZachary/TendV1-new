@@ -77,6 +77,11 @@ export const TAG_CATEGORIES = [
       "jane doe",
     ],
   },
+  {
+    id: "other",
+    label: "Other",
+    keywords: [],
+  },
 ] as const;
 
 export type TagId = (typeof TAG_CATEGORIES)[number]["id"];
@@ -104,6 +109,9 @@ export const extractTags = (text: string) => {
     }
   });
 
+  if (matches.size === 0) {
+    matches.add("other");
+  }
   return Array.from(matches);
 };
 
