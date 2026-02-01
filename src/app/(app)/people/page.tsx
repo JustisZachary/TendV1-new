@@ -27,9 +27,9 @@ const TAG_STYLES: Record<
     hover: "hover:bg-blue-50",
   },
   "spiritual-health": {
-    text: "text-indigo-700",
-    border: "border-indigo-300",
-    hover: "hover:bg-indigo-50",
+    text: "text-purple-700",
+    border: "border-purple-300",
+    hover: "hover:bg-purple-50",
   },
   "mental-health": {
     text: "text-green-700",

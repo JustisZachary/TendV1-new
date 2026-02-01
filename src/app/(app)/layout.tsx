@@ -29,16 +29,16 @@ export default function AppLayout({
   return (
     <div className="min-h-screen bg-[#f7f7f7] text-gray-900">
       <div className="grid w-full grid-cols-[72px_1fr]">
-        <aside className="sticky top-0 flex h-screen flex-col border-r border-gray-200 bg-gray-100/90">
+        <aside className="sticky top-0 flex h-screen flex-col border-r border-gray-100 bg-white">
           <div className="flex flex-1 flex-col items-center gap-1 py-5">
             <a
               aria-label="Inbox"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-50 hover:text-gray-700"
               href="/dashboard"
             >
               <svg
                 aria-hidden="true"
-                className="h-5 w-5"
+                className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -53,12 +53,12 @@ export default function AppLayout({
             </a>
             <a
               aria-label="New submission"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-900 transition hover:bg-white"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-purple-700 transition hover:bg-purple-50 hover:text-purple-800"
               href="/form"
             >
               <svg
                 aria-hidden="true"
-                className="h-6 w-6"
+                className="h-7 w-7"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -73,12 +73,12 @@ export default function AppLayout({
             </a>
             <a
               aria-label="Search"
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-50 hover:text-gray-700"
               href="/search"
             >
               <svg
                 aria-hidden="true"
-                className="h-5 w-5"
+                className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
@@ -101,12 +101,16 @@ export default function AppLayout({
                     aria-label={label}
                     aria-current={isActive ? "page" : undefined}
                     href={href}
-                    className="relative flex h-10 w-10 items-center justify-center rounded-xl text-gray-500 transition hover:bg-white hover:text-gray-700"
+                    className={`relative flex h-11 w-11 items-center justify-center rounded-xl transition ${
+                      isActive
+                        ? "bg-white text-purple-700 shadow-sm"
+                        : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                    }`}
                   >
                     {path === "/calendar" && (
                       <svg
                         aria-hidden="true"
-                        className="h-5 w-5"
+                        className="h-6 w-6"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth={2}
@@ -122,7 +126,7 @@ export default function AppLayout({
                     {path === "/people" && (
                       <svg
                         aria-hidden="true"
-                        className="h-5 w-5"
+                        className="h-6 w-6"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth={2}
@@ -138,7 +142,7 @@ export default function AppLayout({
                     {path === "/analytics" && (
                       <svg
                         aria-hidden="true"
-                        className="h-5 w-5"
+                        className="h-6 w-6"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth={2}
@@ -154,7 +158,7 @@ export default function AppLayout({
                     {isActive && (
                       <span
                         aria-hidden
-                        className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-blue-400"
+                        className="absolute right-0 top-1/2 h-6 w-0.5 -translate-y-1/2 rounded-full bg-purple-700"
                       />
                     )}
                   </a>

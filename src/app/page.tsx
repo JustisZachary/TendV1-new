@@ -15,7 +15,7 @@ export default function Home() {
         </a>
         <a
           href="/dashboard"
-          className="inline-flex items-center justify-center rounded-full border border-purple-500 px-6 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-50"
+          className="inline-flex items-center justify-center rounded-full border border-purple-700 px-6 py-2 text-sm font-semibold text-purple-700 transition hover:bg-purple-50"
         >
           View Dashboard
         </a>

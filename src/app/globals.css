@@ -31,6 +31,30 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #7e22ce #f3f4f6;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: #7e22ce;
+  border-radius: 999px;
+  border: 2px solid #f3f4f6;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: #6b21a8;
+}
+
 /* Pie chart slice hover: expand slightly from center (viewBox 0 0 200 200) */
 .pie-slice-group {
   cursor: pointer;
@@ -41,4 +65,63 @@ body {
 }
 .pie-slice-group:hover .pie-slice-path {
   transform: scale(1.05);
+}
+
+.metric-card {
+  transition: background-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+@keyframes metricHighlightPulse {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  100% {
+    box-shadow: 0 0 0 2px currentColor;
+  }
+}
+
+.tag-metrics:has(.pie-slice-path[data-tag="marriage"]:hover)
+  .metric-card[data-tag="marriage"] {
+  background-color: rgba(220, 38, 38, 0.06);
+  color: #b91c1c;
+  box-shadow: 0 0 0 2px currentColor;
+  animation: metricHighlightPulse 0.2s ease;
+  transform: translateY(-1px);
+}
+
+.tag-metrics:has(.pie-slice-path[data-tag="finances"]:hover)
+  .metric-card[data-tag="finances"] {
+  background-color: rgba(37, 99, 235, 0.06);
+  color: #1d4ed8;
+  box-shadow: 0 0 0 2px currentColor;
+  animation: metricHighlightPulse 0.2s ease;
+  transform: translateY(-1px);
+}
+
+.tag-metrics:has(.pie-slice-path[data-tag="spiritual-health"]:hover)
+  .metric-card[data-tag="spiritual-health"] {
+  background-color: rgba(126, 34, 206, 0.08);
+  color: #7e22ce;
+  box-shadow: 0 0 0 2px currentColor;
+  animation: metricHighlightPulse 0.2s ease;
+  transform: translateY(-1px);
+}
+
+.tag-metrics:has(.pie-slice-path[data-tag="mental-health"]:hover)
+  .metric-card[data-tag="mental-health"] {
+  background-color: rgba(22, 163, 74, 0.06);
+  color: #15803d;
+  box-shadow: 0 0 0 2px currentColor;
+  animation: metricHighlightPulse 0.2s ease;
+  transform: translateY(-1px);
+}
+
+.tag-metrics:has(.pie-slice-path[data-tag="faith-questions"]:hover)
+  .metric-card[data-tag="faith-questions"] {
+  background-color: rgba(250, 204, 21, 0.1);
+  color: #a16207;
+  box-shadow: 0 0 0 2px currentColor;
+  animation: metricHighlightPulse 0.2s ease;
+  transform: translateY(-1px);
 }

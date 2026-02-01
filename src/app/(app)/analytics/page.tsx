@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
@@ -34,152 +33,84 @@ export default async function AnalyticsPage() {
     }
   }
 
-  const submissionTags = submissions.map((submission) => {
+  const submissionTags: TagId[][] = submissions.map((submission) => {
     const tags = parseTagString(submission.tags);
     return tags.length > 0 ? tags : ["other"];
   });
   const totalRequests = submissionTags.length;
-  const palette = ["#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00", "#6B7280"];
-  const iconById: Record<TagId, ReactNode> = {
-    marriage: (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M7.5 6.5a3 3 0 1 1 6 0v4a3 3 0 1 1-6 0v-4Z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M10.5 8.5h3m5 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 0v4a3 3 0 0 1-3 3h-2"
-        />
-      </svg>
-    ),
-    finances: (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M4 7h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M16 12h2M6 9v6"
-        />
-      </svg>
-    ),
-    "spiritual-health": (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 3v18m-5-9h10"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M6.5 5.5 17.5 18.5M17.5 5.5 6.5 18.5"
-        />
-      </svg>
-    ),
-    "mental-health": (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 4a6 6 0 0 1 6 6v3a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5V9a5 5 0 0 1 5-5Z"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 10h6M9 13h6"
-        />
-      </svg>
-    ),
-    "faith-questions": (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9.25 9.5a2.75 2.75 0 1 1 4.1 2.4c-.9.52-1.35 1.04-1.35 2.1v.5"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 17.5h.01"
-        />
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18Z"
-        />
-      </svg>
-    ),
-    other: (
-      <svg
-        aria-hidden="true"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z"
-        />
-      </svg>
-    ),
+  const tagMetricStyles: Record<
+    TagId,
+    { text: string; border: string; dot: string; slice: string }
+  > = {
+    marriage: {
+      text: "text-red-700",
+      border: "border-red-200",
+      dot: "bg-red-500",
+      slice: "#dc2626",
+    },
+    finances: {
+      text: "text-blue-700",
+      border: "border-blue-200",
+      dot: "bg-blue-500",
+      slice: "#2563eb",
+    },
+    "spiritual-health": {
+      text: "text-purple-700",
+      border: "border-purple-200",
+      dot: "bg-purple-500",
+      slice: "#7e22ce",
+    },
+    "mental-health": {
+      text: "text-green-700",
+      border: "border-green-200",
+      dot: "bg-green-500",
+      slice: "#16a34a",
+    },
+    "faith-questions": {
+      text: "text-yellow-700",
+      border: "border-yellow-200",
+      dot: "bg-yellow-400",
+      slice: "#facc15",
+    },
+    other: {
+      text: "text-gray-600",
+      border: "border-gray-200",
+      dot: "bg-gray-400",
+      slice: "#6b7280",
+    },
   };
-  const categoryTotals = TAG_CATEGORIES.map((category, index) => {
-    const count = submissionTags.filter((tags) => tags.includes(category.id))
-      .length;
+  const pieCategories = TAG_CATEGORIES.filter(
+    (category) => category.id !== "other"
+  );
+  const tagCounts = pieCategories.reduce<Record<TagId, number>>(
+    (acc, category) => {
+      acc[category.id] = 0;
+      return acc;
+    },
+    {} as Record<TagId, number>
+  );
+  submissionTags.forEach((tags) => {
+    tags.forEach((tag) => {
+      if (tagCounts[tag] !== undefined) {
+        tagCounts[tag] += 1;
+      }
+    });
+  });
+  const totalTaggedCount = Object.values(tagCounts).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  const categoryTotals = pieCategories.map((category) => {
+    const count = tagCounts[category.id] ?? 0;
 
     return {
       ...category,
-      color: palette[index % palette.length],
+      color: tagMetricStyles[category.id].slice,
       count,
-      percentage: totalRequests
-        ? Math.round((count / totalRequests) * 100)
+      percentage: totalTaggedCount
+        ? Math.round((count / totalTaggedCount) * 100)
         : 0,
-      share: totalRequests ? count / totalRequests : 0,
+      share: totalTaggedCount ? count / totalTaggedCount : 0,
     };
   });
   const slices = categoryTotals.map((category) => ({
@@ -231,7 +162,7 @@ export default async function AnalyticsPage() {
           </span>
         </div>
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
+        <div className="tag-metrics mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
           <div className="flex items-center justify-center">
             <svg
               className="h-48 w-48"
@@ -248,6 +179,7 @@ export default async function AnalyticsPage() {
                       d={arcPath(slice.startAngle, slice.endAngle)}
                       fill={slice.color}
                       className="pie-slice-path"
+                      data-tag={slice.id}
                     >
                     <title>
                       {slice.label}: {slice.count} request
@@ -271,20 +203,23 @@ export default async function AnalyticsPage() {
             {categoryTotals.map((category) => (
               <div
                 key={category.id}
-                className="group relative rounded-xl border border-gray-100 bg-gray-50 p-4"
+                className={`metric-card group relative rounded-xl border bg-white p-4 ${tagMetricStyles[category.id].border}`}
+                data-tag={category.id}
               >
-                <div className="flex items-center gap-2 text-gray-700">
+                <div className="flex items-center gap-2">
                   <span
-                    className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: category.color }}
+                    className={`h-2.5 w-2.5 rounded-full ${tagMetricStyles[category.id].dot}`}
                     aria-hidden="true"
                   />
-                  <span aria-hidden="true">{iconById[category.id]}</span>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <p
+                    className={`text-xs font-semibold uppercase tracking-wide ${tagMetricStyles[category.id].text}`}
+                  >
                     {category.label}
                   </p>
                 </div>
-                <p className="mt-2 text-2xl font-semibold text-gray-900">
+                <p
+                  className={`mt-2 text-2xl font-semibold ${tagMetricStyles[category.id].text}`}
+                >
                   {category.percentage}%
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
