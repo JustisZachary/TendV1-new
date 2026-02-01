@@ -165,6 +165,31 @@ export default function AppLayout({
                 );
               })}
             </nav>
+            <a
+              aria-label="Settings"
+              className="mt-2 flex h-11 w-11 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-50 hover:text-gray-700"
+              href="/settings"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.6 1.6 0 0 0-1.76-.32 1.6 1.6 0 0 0-.97 1.46V21a2 2 0 0 1-4 0v-.08a1.6 1.6 0 0 0-1.02-1.48 1.6 1.6 0 0 0-1.76.32l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05a1.6 1.6 0 0 0 .32-1.76 1.6 1.6 0 0 0-1.46-.97H3a2 2 0 0 1 0-4h.08a1.6 1.6 0 0 0 1.48-1.02 1.6 1.6 0 0 0-.32-1.76l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05a1.6 1.6 0 0 0 1.76.32 1.6 1.6 0 0 0 .97-1.46V3a2 2 0 0 1 4 0v.08a1.6 1.6 0 0 0 1.02 1.48 1.6 1.6 0 0 0 1.76-.32l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05a1.6 1.6 0 0 0-.32 1.76 1.6 1.6 0 0 0 1.46.97H21a2 2 0 0 1 0 4h-.08a1.6 1.6 0 0 0-1.48 1.02Z"
+                />
+              </svg>
+            </a>
           </div>
         </aside>
         <main className="min-h-screen px-6 py-8">
