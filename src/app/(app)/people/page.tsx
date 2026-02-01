@@ -2,10 +2,65 @@ import Link from "next/link";
 
 import type { Submission } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
-import { TAG_CATEGORIES, parseTagString } from "@/lib/tags";
+import { TAG_CATEGORIES, type TagId, parseTagString } from "@/lib/tags";
 
 type PeoplePageProps = {
   searchParams?: { tag?: string } | Promise<{ tag?: string }>;
+};
+
+const TAG_STYLES: Record<
+  TagId,
+  {
+    text: string;
+    border: string;
+    hover: string;
+  }
+> = {
+  marriage: {
+    text: "text-red-700",
+    border: "border-red-300",
+    hover: "hover:bg-red-50",
+  },
+  finances: {
+    text: "text-blue-700",
+    border: "border-blue-300",
+    hover: "hover:bg-blue-50",
+  },
+  "spiritual-health": {
+    text: "text-indigo-700",
+    border: "border-indigo-300",
+    hover: "hover:bg-indigo-50",
+  },
+  "mental-health": {
+    text: "text-green-700",
+    border: "border-green-300",
+    hover: "hover:bg-green-50",
+  },
+  "faith-questions": {
+    text: "text-yellow-700",
+    border: "border-yellow-300",
+    hover: "hover:bg-yellow-50",
+  },
+  other: {
+    text: "text-gray-600",
+    border: "border-gray-300",
+    hover: "hover:bg-gray-50",
+  },
+};
+
+const ALL_REQUESTS_SELECTED_CLASSES =
+  "bg-purple-700 text-white shadow-sm hover:bg-purple-800";
+
+const resolveTagId = (value: string): TagId | undefined => {
+  const normalized = value.trim().toLowerCase();
+  return TAG_CATEGORIES.find(
+    (category) => category.label.toLowerCase() === normalized
+  )?.id;
+};
+
+const getTagClasses = (tagId: TagId) => {
+  const style = TAG_STYLES[tagId];
+  return `border ${style.border} ${style.text} ${style.hover} bg-white`;
 };
 
 export default async function PeoplePage({ searchParams }: PeoplePageProps) {
@@ -52,7 +107,7 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
             href="/people"
             className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
               selectedTag === "all"
-                ? "bg-[#1e3a5f] text-white shadow-sm"
+                ? ALL_REQUESTS_SELECTED_CLASSES
                 : "bg-gray-100 text-gray-700 hover:bg-gray-200"
             }`}
           >
@@ -64,7 +119,7 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
               href={`/people?tag=${category.id}`}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
                 selectedTag === category.id
-                  ? "border-2 border-blue-400 bg-white text-gray-900"
+                  ? getTagClasses(category.id)
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
               }`}
             >
@@ -107,7 +162,11 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
                       {submission.firstName} {submission.lastName}
                     </p>
                     {submission.helpTopic ? (
-                      <span className="rounded-full bg-[#1e3a5f] px-3 py-1 text-xs font-semibold text-white">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
+                          resolveTagId(submission.helpTopic) ?? "other"
+                        )}`}
+                      >
                         {submission.helpTopic}
                       </span>
                     ) : null}
@@ -128,7 +187,9 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
                         return (
                           <span
                             key={`${submission.id}-${tag}`}
-                            className="rounded-full bg-[#1e3a5f] px-3 py-1 text-xs font-semibold text-white"
+                            className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
+                              tag
+                            )}`}
                           >
                             {label}
                           </span>
