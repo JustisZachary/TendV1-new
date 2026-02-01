@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { prisma } from "@/lib/db";
+import type { Submission } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
 import { TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
 type PeoplePageProps = {
@@ -15,19 +16,24 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
       ? TAG_CATEGORIES.find((category) => category.id === selectedTag)?.id
       : null;
 
-  let submissions: Awaited<
-    ReturnType<typeof prisma.submission.findMany>
-  > = [];
-  if (process.env.DATABASE_URL) {
-    try {
-      submissions = await prisma.submission.findMany({
-        where: tagFilter
-          ? { tags: { contains: `|${tagFilter}|` } }
-          : undefined,
-        orderBy: { createdAt: "desc" },
-      });
-    } catch {
-      submissions = [];
+  let submissions: Submission[] = [];
+
+  if (supabase) {
+    let query = supabase
+      .from("Submission")
+      .select("*")
+      .order("createdAt", { ascending: false });
+
+    if (tagFilter) {
+      query = query.like("tags", `%|${tagFilter}|%`);
+    }
+
+    const { data, error } = await query;
+
+    if (error && process.env.NODE_ENV !== "production") {
+      console.warn("PeoplePage: failed to load submissions.", error);
+    } else {
+      submissions = (data ?? []) as Submission[];
     }
   }
 
@@ -81,9 +87,9 @@ export default async function PeoplePage({ searchParams }: PeoplePageProps) {
         <div className="mt-5 space-y-4">
           {submissions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-              {process.env.DATABASE_URL
+              {supabase
                 ? "No requests match this tag yet."
-                : "No database connected. Form submissions are sent to Formspree. Connect a database to list them here."}
+                : "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or use Formspree for form submissions."}
             </div>
           ) : (
             submissions.map((submission) => {

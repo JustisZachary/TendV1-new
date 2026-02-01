@@ -4,7 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Supabase + Vercel setup (step-by-step)
 
-You need three environment variables so this app (and your Vercel deployment) can use your Supabase project: **project URL**, **anon key**, and **database connection string**. Below is where to get each one and where to put it.
+This app uses **Supabase** as the backend (no Prisma). You need two environment variables: **project URL** and **anon key**.
 
 ---
 
@@ -26,7 +26,7 @@ Log in at [supabase.com](https://supabase.com), open your project, and use the l
 
 Copy both values somewhere safe (e.g. a notes app). You’ll paste them into `.env.local` and later into Vercel.
 
-#### Step 1.2 — Database connection string (for Prisma / form submissions)
+#### (Optional) Formspree fallback
 
 1. Still in **Project Settings**, click **Database** in the left menu.
 2. Scroll to the **Connection string** section.
@@ -47,41 +47,48 @@ Important: use the **pooler** URL (port **6543**). The direct URL (5432) can hit
 
 ### Part 2: Use those values locally (your machine)
 
-So your app and Prisma use your Supabase project when you run `npm run dev`.
+Your app uses Supabase when you run `npm run dev`.
 
 #### Step 2.1 — Create `.env.local`
 
 1. In the **root** of this repo (same folder as `package.json`), create a file named `.env.local`.  
    (If you have an `env.example` file, you can copy it and rename the copy to `.env.local`.)
-2. Open `.env.local` in your editor and add these three lines, **with your real values** (no quotes unless the value itself contains spaces):
+2. Open `.env.local` in your editor and add these two lines, **with your real values** (no quotes unless the value itself contains spaces):
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-DATABASE_URL=postgresql://postgres.xxxx:YOUR_PASSWORD@aws-0-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
 ```
 
 - **NEXT_PUBLIC_SUPABASE_URL** — paste the Project URL from Step 1.1.
 - **NEXT_PUBLIC_SUPABASE_ANON_KEY** — paste the anon/public API key from Step 1.1.
-- **DATABASE_URL** — paste the full connection string from Step 1.2 (including your real password).
-
-Save the file. Next.js and Prisma will read these when you run commands in this project. Do not commit `.env.local` (it’s already in `.gitignore`).
+Save the file. Next.js will read these when you run commands in this project. Do not commit `.env.local` (it’s already in `.gitignore`).
 
 #### Step 2.2 — Create the tables in Supabase (first time only)
 
-Your app expects a `Submission` table (and any others from Prisma). You need to apply the schema to your Supabase database once.
+The app expects a table named **Submission** with camelCase columns. In Supabase: **SQL Editor** → New query, run:
 
-1. In a terminal, go to the project root:
-   `cd /path/to/Tend`
-2. Run:
-   `npx prisma migrate deploy`
-   This applies the migrations in `prisma/migrations` to the database pointed at by `DATABASE_URL` (your Supabase DB).
+```sql
+create table if not exists "Submission" (
+  "id" text primary key,
+  "createdAt" timestamptz not null default now(),
+  "updatedAt" timestamptz not null default now(),
+  "firstName" text not null,
+  "lastName" text not null,
+  "email" text not null,
+  "phoneType" text not null,
+  "phoneNumber" text not null,
+  "consentToText" boolean not null,
+  "birthdate" timestamptz not null,
+  "helpTopic" text not null,
+  "primaryCampus" text not null,
+  "regularAttender" boolean not null,
+  "additionalDetails" text,
+  "tags" text not null default ''
+);
+```
 
-If you prefer to sync the schema without using migration history (e.g. early prototyping), you can instead run:
-`npx prisma db push`
-Use `migrate deploy` when you want to keep a proper migration history.
-
-After this, your Supabase database has the tables this app needs. You can confirm in Supabase: **Table Editor** in the sidebar should show the `Submission` table (and any others).
+If you use Row Level Security (RLS), add policies so the anon key can insert and select on this table. Confirm in **Table Editor** that the `Submission` table exists.
 
 #### Step 2.3 — Run the app locally
 
@@ -106,20 +113,14 @@ So your **deployed** app on Vercel uses the **same** Supabase project and databa
 
 1. Click **Settings** in the top navigation.
 2. In the left sidebar, click **Environment Variables**.
-3. Add **three** variables. For each one:
-   - **Key** = exact name below.
-   - **Value** = the same value you put in `.env.local` (same Supabase project URL, same anon key, same DATABASE_URL).
-   - **Environments**: check **Production** (and **Preview** if you want branch deployments to use the same DB).
+3. Add **two** variables (same values as in `.env.local`):
 
-Add these one by one:
+| Key | Value |
+|-----|--------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key |
 
-| Key | Value | Note |
-|-----|--------|------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase Project URL | Same as in `.env.local`. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Your Supabase anon key | Same as in `.env.local`. |
-| `DATABASE_URL` | Your Supabase DB URI (pooler, port 6543) | Same as in `.env.local`. |
-
-Do **not** add quotes in the Vercel value field. Paste the raw URL or key.
+Check **Production** (and **Preview** if you want). Do not add quotes in the value field.
 
 #### Step 3.3 — Redeploy so Vercel picks up the variables
 
@@ -127,17 +128,15 @@ Do **not** add quotes in the Vercel value field. Paste the raw URL or key.
 2. Open the **⋯** menu on the latest deployment and choose **Redeploy** (or push a new commit to trigger a deploy).
 3. After the deploy finishes, open your live app URL and submit the form again.
 
-Submissions should now go to the **same** Supabase database (you’ll see them in Supabase **Table Editor** and in your local app if it uses the same `DATABASE_URL`).
+Submissions should now go to the **same** Supabase database (you’ll see them in Supabase **Table Editor** and in your local app if it uses the same Supabase project).
 
 ---
 
 ### Summary
 
-- **Supabase** = your Postgres database and (optionally) auth/realtime. You get **Project URL**, **anon key**, and **Database URI (pooler)** from the dashboard.
-- **Local** = `.env.local` with those three variables + `npx prisma migrate deploy` (or `db push`) so the schema exists in Supabase.
-- **Vercel** = same three variables in **Settings → Environment Variables**, then redeploy.
-
-After this, both local and Vercel use the same Supabase project and the same database.
+- **Backend** = Supabase only (no Prisma). Use **Project URL** and **anon key** from the Supabase dashboard.
+- **Local** = `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`, plus the `Submission` table in Supabase.
+- **Vercel** = same two variables in **Settings → Environment Variables**, then redeploy.
 
 ## Getting Started
 

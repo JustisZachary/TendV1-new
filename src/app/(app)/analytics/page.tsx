@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { prisma } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
 export const dynamic = "force-dynamic";
@@ -19,15 +19,26 @@ const polarToCartesian = (
 };
 
 export default async function AnalyticsPage() {
-  const submissions = process.env.DATABASE_URL
-    ? await prisma.submission.findMany({
-        select: {
-          tags: true,
-        },
-      })
-    : [];
+  let submissions: { tags: string | null }[] = [];
 
-  const totalRequests = submissions.length;
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("Submission")
+      .select("tags")
+      .order("createdAt", { ascending: false });
+
+    if (error && process.env.NODE_ENV !== "production") {
+      console.warn("AnalyticsPage: failed to load submissions.", error);
+    } else {
+      submissions = data ?? [];
+    }
+  }
+
+  const submissionTags = submissions.map((submission) => {
+    const tags = parseTagString(submission.tags);
+    return tags.length > 0 ? tags : ["other"];
+  });
+  const totalRequests = submissionTags.length;
   const palette = ["#0072B2", "#009E73", "#E69F00", "#CC79A7", "#D55E00", "#6B7280"];
   const iconById: Record<TagId, ReactNode> = {
     marriage: (
@@ -158,9 +169,8 @@ export default async function AnalyticsPage() {
     ),
   };
   const categoryTotals = TAG_CATEGORIES.map((category, index) => {
-    const count = submissions.filter((submission) =>
-      parseTagString(submission.tags).includes(category.id)
-    ).length;
+    const count = submissionTags.filter((tags) => tags.includes(category.id))
+      .length;
 
     return {
       ...category,

@@ -1,5 +1,6 @@
+import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { supabase } from "@/lib/supabase";
 import { extractTags, toTagString } from "@/lib/tags";
 
 type SubmissionPayload = {
@@ -58,13 +59,13 @@ function validatePayload(body: SubmissionPayload) {
 }
 
 export async function POST(request: Request) {
-  const useFormspree =
-    !process.env.DATABASE_URL && process.env.FORMSPREE_FORM_ID;
+  const formspreeId = process.env.FORMSPREE_FORM_ID;
+  const useFormspree = !supabase && formspreeId;
 
-  if (!process.env.DATABASE_URL && !useFormspree) {
-    console.error("[submissions] Neither DATABASE_URL nor FORMSPREE_FORM_ID is set");
+  if (!supabase && !useFormspree) {
+    console.error("[submissions] Neither Supabase nor FORMSPREE_FORM_ID is set");
     return NextResponse.json(
-      { error: "Server is not configured for submissions. Set FORMSPREE_FORM_ID on Vercel (or connect a database)." },
+      { error: "Server is not configured for submissions. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or FORMSPREE_FORM_ID." },
       { status: 503 }
     );
   }
@@ -80,9 +81,15 @@ export async function POST(request: Request) {
       );
     }
 
-    if (useFormspree) {
-      const formId = process.env.FORMSPREE_FORM_ID!;
-      const formspreeRes = await fetch(`https://formspree.io/f/${formId}`, {
+    const sendToFormspree = async () => {
+      if (!formspreeId) {
+        return NextResponse.json(
+          { error: "Unable to save submission." },
+          { status: 500 }
+        );
+      }
+
+      const formspreeRes = await fetch(`https://formspree.io/f/${formspreeId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -97,6 +104,10 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json({ id: "formspree" });
+    };
+
+    if (useFormspree) {
+      return sendToFormspree();
     }
 
     const birthdate = new Date(body.birthdate ?? "");
@@ -104,25 +115,45 @@ export async function POST(request: Request) {
     const regularAttender = toBoolean(body.regularAttender ?? "");
     const tagSource = `${body.helpTopic ?? ""} ${body.additionalDetails ?? ""}`;
     const tags = extractTags(tagSource);
+    const tagString = toTagString(tags);
+    const now = new Date();
+    const submissionData = {
+      id: randomUUID(),
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+      firstName: body.firstName ?? "",
+      lastName: body.lastName ?? "",
+      email: body.email ?? "",
+      phoneType: body.phoneType ?? "",
+      phoneNumber: body.phoneNumber ?? "",
+      consentToText,
+      birthdate: birthdate.toISOString(),
+      helpTopic: body.helpTopic ?? "",
+      primaryCampus: body.primaryCampus ?? "",
+      regularAttender,
+      additionalDetails: body.additionalDetails?.trim() || null,
+      tags: tagString,
+    };
 
-    const submission = await prisma.submission.create({
-      data: {
-        firstName: body.firstName ?? "",
-        lastName: body.lastName ?? "",
-        email: body.email ?? "",
-        phoneType: body.phoneType ?? "",
-        phoneNumber: body.phoneNumber ?? "",
-        consentToText,
-        birthdate,
-        helpTopic: body.helpTopic ?? "",
-        primaryCampus: body.primaryCampus ?? "",
-        regularAttender,
-        additionalDetails: body.additionalDetails?.trim() || null,
-        tags: toTagString(tags),
-      },
-    });
+    const { data, error } = await supabase!
+      .from("Submission")
+      .insert(submissionData)
+      .select("id")
+      .single();
 
-    return NextResponse.json({ id: submission.id });
+    if (error) {
+      console.error("[submissions] Supabase error:", error);
+      if (formspreeId) {
+        console.warn("[submissions] Falling back to Formspree.");
+        return sendToFormspree();
+      }
+      return NextResponse.json(
+        { error: "Unable to save submission." },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ id: data?.id ?? submissionData.id });
   } catch (error) {
     if (error instanceof Error && error.message === "Invalid boolean value") {
       return NextResponse.json(

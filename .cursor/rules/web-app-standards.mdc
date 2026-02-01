@@ -1,0 +1,15 @@
+---
+description: Core standards for the Tend web app
+alwaysApply: true
+---
+# Tend Web App Rules
+- Goal: consistency, speed, reliability, onboarding, testing.
+- Commands: use `npm run dev|build|start|lint|test|check-types|format` when present; add missing scripts when introducing tooling.
+- App Router: keep routes in `src/app`; do not add new `src/pages`; prefer server components; add `"use client"` only when needed; use `route.ts` for API.
+- Atomic design: follow `src/components/README.md`; pages in `src/app` own behavior; lower layers are presentational and never import upward.
+- Data boundaries: no direct API calls from `src/components`; fetch/mutate only in `src/app` pages/layouts/route handlers or server actions.
+- Supabase: source of truth; enforce RLS on every table; never ship service role keys to client; use anon key only in client.
+- Styling: Tailwind v4 + `src/app/globals.css` only; avoid inline styles unless dynamic; keep utility order consistent.
+- Testing: add/update tests for UI/API changes; pick a test tool when adding tests and wire `npm run test`.
+- Docs-first: before adding 3rd-party packages, read docs and save a short link note in `/docs`.
+- PRs/Changelog: use `.github/pull_request_template.md` and `docs/CHANGELOG_TEMPLATE.md`; include the Atomic Layer snippet in PRs.
