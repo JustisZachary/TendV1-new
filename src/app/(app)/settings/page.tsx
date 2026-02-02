@@ -40,6 +40,24 @@ const messagingChannels = [
   },
 ];
 
+const churchManagementChannels = [
+  {
+    id: "pco",
+    name: "Planning Center",
+    description: "Sync people profiles and groups from PCO.",
+  },
+  {
+    id: "rock",
+    name: "Rock RMS",
+    description: "Connect Rock profiles to match people in Tether.",
+  },
+  {
+    id: "ccb",
+    name: "CCB",
+    description: "Pull member data to keep profiles in sync.",
+  },
+];
+
 export default function SettingsPage() {
   return (
     <div className="space-y-6">
@@ -89,6 +107,39 @@ export default function SettingsPage() {
               </div>
             </div>
           ))}
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Church management systems
+              </h3>
+              <p className="mt-1 text-xs text-gray-500">
+                Link profiles from PCO, Rock, or CCB. Full setup coming soon.
+              </p>
+            </div>
+            <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-purple-700">
+              Coming soon
+            </span>
+          </div>
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            {churchManagementChannels.map((channel) => (
+              <div
+                key={channel.id}
+                className="rounded-xl border border-gray-200 bg-gray-50/40 p-4"
+              >
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {channel.name}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {channel.description}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div>
