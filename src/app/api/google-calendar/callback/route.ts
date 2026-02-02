@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect("/calendar?status=error&reason=missing_code");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const storedState = cookieStore.get("gcal_oauth_state")?.value;
 
   if (!storedState || storedState !== state) {

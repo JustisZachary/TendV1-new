@@ -14,7 +14,7 @@ const cookieOptions = {
 };
 
 export async function GET() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get("gcal_access_token")?.value;
   const refreshToken = cookieStore.get("gcal_refresh_token")?.value;
   const expiresAt = Number(cookieStore.get("gcal_expires_at")?.value ?? 0);

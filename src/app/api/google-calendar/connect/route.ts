@@ -16,7 +16,7 @@ export async function GET() {
     );
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   cookieStore.set("gcal_oauth_state", state, {
     httpOnly: true,
     sameSite: "lax",
