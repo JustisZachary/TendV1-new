@@ -1,6 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
 
+import { getTagClasses, resolveTagId, TAG_STYLES } from "../people/peopleHelpers";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -17,13 +19,44 @@ const polarToCartesian = (
   };
 };
 
+type SubmissionMetrics = {
+  tags: string | null;
+  createdAt: string;
+  updatedAt: string;
+  helpTopic: string | null;
+  email: string | null;
+};
+
+const formatHourLabel = (hour: number) => {
+  const period = hour >= 12 ? "PM" : "AM";
+  const normalized = hour % 12 === 0 ? 12 : hour % 12;
+  return `${normalized} ${period}`;
+};
+
+const formatDuration = (milliseconds: number) => {
+  if (!Number.isFinite(milliseconds) || milliseconds <= 0) {
+    return "Not available";
+  }
+  const totalMinutes = Math.round(milliseconds / 60000);
+  if (totalMinutes < 60) {
+    return `${totalMinutes} min`;
+  }
+  const totalHours = Math.floor(totalMinutes / 60);
+  const remainingMinutes = totalMinutes % 60;
+  if (totalHours < 48) {
+    return `${totalHours} hr ${remainingMinutes} min`;
+  }
+  const totalDays = Math.round(totalHours / 24);
+  return `${totalDays} days`;
+};
+
 export default async function AnalyticsPage() {
-  let submissions: { tags: string | null }[] = [];
+  let submissions: SubmissionMetrics[] = [];
 
   if (supabase) {
     const { data, error } = await supabase
       .from("Submission")
-      .select("tags")
+      .select("tags, createdAt, updatedAt, helpTopic, email")
       .order("createdAt", { ascending: false });
 
     if (error && process.env.NODE_ENV !== "production") {
@@ -38,6 +71,70 @@ export default async function AnalyticsPage() {
     return tags.length > 0 ? tags : ["other"];
   });
   const totalRequests = submissionTags.length;
+  const submissionsByEmail = submissions.reduce<Record<string, number>>(
+    (acc, submission) => {
+      if (!submission.email) {
+        return acc;
+      }
+      acc[submission.email] = (acc[submission.email] ?? 0) + 1;
+      return acc;
+    },
+    {}
+  );
+  const uniqueProfiles = Object.keys(submissionsByEmail).length;
+  const tagCountsByTag = submissions.reduce<Record<string, number>>(
+    (acc, submission) => {
+      const tags = parseTagString(submission.tags);
+      tags.forEach((tag) => {
+        acc[tag] = (acc[tag] ?? 0) + 1;
+      });
+      if (submission.helpTopic) {
+        const tagId = resolveTagId(submission.helpTopic);
+        if (tagId) {
+          acc[tagId] = (acc[tagId] ?? 0) + 1;
+        }
+      }
+      return acc;
+    },
+    {}
+  );
+  const topTags = Object.entries(tagCountsByTag)
+    .sort(([, countA], [, countB]) => countB - countA)
+    .slice(0, 5)
+    .map(([tagId, count]) => {
+      const label =
+        TAG_CATEGORIES.find((category) => category.id === tagId)?.label ??
+        tagId;
+      return { id: tagId, label, count };
+    });
+  const hourBuckets = submissions.reduce<number[]>((acc, submission) => {
+    const createdAt = new Date(submission.createdAt);
+    if (!Number.isNaN(createdAt.getTime())) {
+      acc[createdAt.getHours()] += 1;
+    }
+    return acc;
+  }, Array.from({ length: 24 }, () => 0));
+  const busiestHours = hourBuckets
+    .map((count, hour) => ({ hour, count }))
+    .filter((entry) => entry.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+  const resolutionDurations = submissions
+    .map((submission) => {
+      const createdAt = new Date(submission.createdAt).getTime();
+      const updatedAt = new Date(submission.updatedAt).getTime();
+      if (Number.isNaN(createdAt) || Number.isNaN(updatedAt)) {
+        return null;
+      }
+      const diff = updatedAt - createdAt;
+      return diff > 0 ? diff : null;
+    })
+    .filter((value): value is number => value !== null);
+  const averageResolutionMs =
+    resolutionDurations.length > 0
+      ? resolutionDurations.reduce((sum, value) => sum + value, 0) /
+        resolutionDurations.length
+      : 0;
   const tagMetricStyles: Record<
     TagId,
     { text: string; border: string; dot: string; slice: string }
@@ -151,6 +248,106 @@ export default async function AnalyticsPage() {
           Review keyword trends across form requests.
         </p>
       </div>
+
+      <section className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-900">
+            People + submission reporting
+          </h2>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Profiles tracked
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {uniqueProfiles}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Submissions
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-gray-900">
+                {submissions.length}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Avg response time
+              </p>
+              <p className="mt-1 text-lg font-semibold text-gray-900">
+                {formatDuration(averageResolutionMs)}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Based on latest update timestamp.
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Avg time to resolution
+              </p>
+              <p className="mt-1 text-lg font-semibold text-gray-900">
+                {formatDuration(averageResolutionMs)}
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Based on latest update timestamp.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <h2 className="text-sm font-semibold text-gray-900">
+            Tag + time insights
+          </h2>
+          <div className="mt-4 space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Top tags
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {topTags.length > 0 ? (
+                  topTags.map((tag) => (
+                    <span
+                      key={tag.id}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
+                        (tag.id in TAG_STYLES ? tag.id : "other") as keyof typeof TAG_STYLES
+                      )}`}
+                    >
+                      {tag.label} · {tag.count}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">
+                    No tags have been applied yet.
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-400">
+                Busiest submission hours
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {busiestHours.length > 0 ? (
+                  busiestHours.map((entry) => (
+                    <span
+                      key={entry.hour}
+                      className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700"
+                    >
+                      {formatHourLabel(entry.hour)} · {entry.count}
+                    </span>
+                  ))
+                ) : (
+                  <span className="text-sm text-gray-500">
+                    Not enough data to determine peak times.
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
         <div className="flex items-center justify-between">
