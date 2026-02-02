@@ -14,6 +14,7 @@ type PeopleProfilesClientProps = {
   submissionsByEmail: Record<string, number>;
   selectedTag: string;
   selectedSort: "newest" | "oldest";
+  basePath?: string;
 };
 
 type NotesState = Record<string, string>;
@@ -61,6 +62,7 @@ export default function PeopleProfilesClient({
   submissionsByEmail,
   selectedTag,
   selectedSort,
+  basePath,
 }: PeopleProfilesClientProps) {
   const [notes, setNotes] = useState<NotesState>({});
   const [isLoaded, setIsLoaded] = useState(false);
@@ -114,10 +116,11 @@ export default function PeopleProfilesClient({
       <aside className="w-80 shrink-0 border-r border-gray-200 bg-transparent">
         <div className="border-b border-gray-100 px-4 py-3">
           <div className="flex items-center gap-2">
-            <PeopleTagFilterSelect selectedTag={selectedTag} />
+            <PeopleTagFilterSelect selectedTag={selectedTag} basePath={basePath} />
             <PeopleSortSelect
               selectedTag={selectedTag}
               selectedSort={selectedSort}
+              basePath={basePath}
             />
           </div>
         </div>

@@ -74,6 +74,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
             submissionsByEmail={submissionsByEmail}
             selectedTag={selectedTag}
             selectedSort={selectedSort}
+            basePath="/dashboard"
           />
         )}
       </div>

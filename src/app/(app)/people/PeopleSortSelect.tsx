@@ -6,11 +6,13 @@ import { useState } from "react";
 type PeopleSortSelectProps = {
   selectedSort: "newest" | "oldest";
   selectedTag: string;
+  basePath?: string;
 };
 
 export default function PeopleSortSelect({
   selectedSort,
   selectedTag,
+  basePath = "/dashboard",
 }: PeopleSortSelectProps) {
   const router = useRouter();
   const [value, setValue] = useState(selectedSort);
@@ -24,7 +26,7 @@ export default function PeopleSortSelect({
     }
     params.set("sort", nextValue);
     const query = params.toString();
-    router.push(query ? `/people?${query}` : "/people");
+    router.push(query ? `${basePath}?${query}` : basePath);
   };
 
   return (

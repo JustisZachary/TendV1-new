@@ -7,10 +7,12 @@ import { TAG_CATEGORIES } from "@/lib/tags";
 
 type PeopleTagFilterSelectProps = {
   selectedTag: string;
+  basePath?: string;
 };
 
 export default function PeopleTagFilterSelect({
   selectedTag,
+  basePath = "/dashboard",
 }: PeopleTagFilterSelectProps) {
   const router = useRouter();
   const [value, setValue] = useState(selectedTag);
@@ -19,10 +21,10 @@ export default function PeopleTagFilterSelect({
     const nextValue = event.target.value;
     setValue(nextValue);
     if (nextValue === "all") {
-      router.push("/people");
+      router.push(basePath);
       return;
     }
-    router.push(`/people?tag=${nextValue}`);
+    router.push(`${basePath}?tag=${nextValue}`);
   };
 
   return (
