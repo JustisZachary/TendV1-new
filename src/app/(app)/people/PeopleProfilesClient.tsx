@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Submission } from "@/lib/types";
 import { TAG_CATEGORIES, type TagId, parseTagString } from "@/lib/tags";
@@ -18,8 +18,16 @@ type PeopleProfilesClientProps = {
 };
 
 type NotesState = Record<string, string>;
+type Message = {
+  id: string;
+  text: string;
+  sender: "user" | "contact";
+  timestamp: Date;
+};
+type MessagesState = Record<string, Message[]>;
 
 const NOTES_STORAGE_KEY = "tend.people.notes";
+const MESSAGES_STORAGE_KEY = "tend.people.messages";
 
 const formatDate = (value: string) => {
   const parsed = new Date(value);
@@ -65,19 +73,38 @@ export default function PeopleProfilesClient({
   basePath,
 }: PeopleProfilesClientProps) {
   const [notes, setNotes] = useState<NotesState>({});
+  const [messages, setMessages] = useState<MessagesState>({});
+  const [messageInput, setMessageInput] = useState("");
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState(submissions[0]?.id ?? "");
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
-    const stored = window.localStorage.getItem(NOTES_STORAGE_KEY);
-    if (stored) {
+    const storedNotes = window.localStorage.getItem(NOTES_STORAGE_KEY);
+    if (storedNotes) {
       try {
-        setNotes(JSON.parse(stored) as NotesState);
+        setNotes(JSON.parse(storedNotes) as NotesState);
       } catch {
         setNotes({});
+      }
+    }
+    const storedMessages = window.localStorage.getItem(MESSAGES_STORAGE_KEY);
+    if (storedMessages) {
+      try {
+        const parsed = JSON.parse(storedMessages) as MessagesState;
+        // Convert timestamp strings back to Date objects
+        Object.keys(parsed).forEach((key) => {
+          parsed[key] = parsed[key].map((msg) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp),
+          }));
+        });
+        setMessages(parsed);
+      } catch {
+        setMessages({});
       }
     }
     setIsLoaded(true);
@@ -89,6 +116,54 @@ export default function PeopleProfilesClient({
     }
     window.localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes));
   }, [isLoaded, notes]);
+
+  useEffect(() => {
+    if (!isLoaded || typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  }, [isLoaded, messages]);
+
+  const handleSendMessage = () => {
+    if (!messageInput.trim() || !activeEntry) return;
+    
+    const newMessage: Message = {
+      id: `msg-${Date.now()}`,
+      text: messageInput.trim(),
+      sender: "user",
+      timestamp: new Date(),
+    };
+    
+    setMessages((prev) => ({
+      ...prev,
+      [activeEntry.submission.id]: [
+        ...(prev[activeEntry.submission.id] ?? []),
+        newMessage,
+      ],
+    }));
+    setMessageInput("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatMessageTime = (date: Date) => {
+    return date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, selectedId]);
 
   useEffect(() => {
     if (!selectedId && submissions[0]?.id) {
@@ -110,10 +185,48 @@ export default function PeopleProfilesClient({
   );
   const activeEntry = selectedEntry ?? submissionsWithTagData[0];
 
+  const getInboxSource = (submission: Submission) => {
+    const source = (submission as Submission & { source?: string }).source;
+    if (source === "sms" || source === "email" || source === "social") {
+      return source;
+    }
+    return "form";
+  };
+
+  const renderSourceIcon = (source: "sms" | "email" | "social" | "form") => {
+    if (source === "sms") {
+      return (
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+        </svg>
+      );
+    }
+    if (source === "email") {
+      return (
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="m22 8-10 6L2 8" />
+        </svg>
+      );
+    }
+    if (source === "social") {
+      return (
+        <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M18 8a3 3 0 1 1-3-3 3 3 0 0 1 3 3Zm0 8a3 3 0 1 1-3-3 3 3 0 0 1 3 3ZM6 12a3 3 0 1 1-3-3 3 3 0 0 1 3 3Zm6-1 2.5-1.5M12 13l2.5 1.5" />
+        </svg>
+      );
+    }
+    return (
+      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+      </svg>
+    );
+  };
+
   return (
-    <div className="flex">
+    <div className="flex h-screen">
       {/* Sidebar - Inbox list */}
-      <aside className="w-80 shrink-0 border-r border-gray-200 bg-transparent">
+      <aside className="w-72 shrink-0 border-r border-gray-200 bg-white">
         <div className="border-b border-gray-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <PeopleTagFilterSelect selectedTag={selectedTag} basePath={basePath} />
@@ -124,12 +237,13 @@ export default function PeopleProfilesClient({
             />
           </div>
         </div>
-        <div className="h-[calc(100vh-244px)] min-h-[500px] overflow-y-auto">
+        <div className="h-[calc(100vh-57px)] overflow-y-auto">
           {submissionsWithTagData.map(({ submission, tags }, index) => {
             const details = submission.additionalDetails ?? "";
             const snippet =
               details.length > 60 ? `${details.slice(0, 60)}...` : details;
             const isActive = submission.id === activeEntry?.submission.id;
+            const inboxSource = getInboxSource(submission);
             return (
               <button
                 key={submission.id}
@@ -149,9 +263,25 @@ export default function PeopleProfilesClient({
                 />
 
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900">
                     {submission.firstName} {submission.lastName}
                   </p>
+                    <div className="mt-1 flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-gray-400">
+                      <span className="rounded-full border border-gray-200 bg-white px-1.5 py-0.5 text-gray-500">
+                        {renderSourceIcon(inboxSource)}
+                      </span>
+                      <span>
+                        {inboxSource === "sms"
+                          ? "Text"
+                          : inboxSource === "email"
+                          ? "Email"
+                          : inboxSource === "social"
+                          ? "DM"
+                          : "Form"}
+                      </span>
+                    </div>
+                  </div>
                   <span className="shrink-0 text-xs text-gray-400">
                     {formatDate(submission.createdAt)}
                   </span>
@@ -172,110 +302,315 @@ export default function PeopleProfilesClient({
         </div>
       </aside>
 
-      {/* Detail panel */}
-      <section className="min-w-0 flex-1 bg-transparent">
+      {/* Chat / Messaging panel */}
+      <section className="flex min-w-0 flex-1 flex-col border-r border-gray-200 bg-[#f7f7f7] overflow-hidden">
         {activeEntry ? (
-          <div>
-            {/* Header */}
-            <div className="border-b border-gray-100 px-6 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  {/* Avatar */}
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-semibold text-purple-700">
-                    {getInitials(
-                      activeEntry.submission.firstName,
-                      activeEntry.submission.lastName
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900">
-                      {activeEntry.submission.firstName}{" "}
-                      {activeEntry.submission.lastName}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-500">
-                      {activeEntry.submission.email}
+          <>
+            {/* Chat header */}
+            <div className="flex shrink-0 items-center justify-between border-b border-gray-100 bg-white px-6 py-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-purple-100 text-sm font-semibold text-purple-700">
+                  {getInitials(
+                    activeEntry.submission.firstName,
+                    activeEntry.submission.lastName
+                  )}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {activeEntry.submission.firstName}{" "}
+                    {activeEntry.submission.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {activeEntry.submission.email}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500"
+                >
+                  Assign
+                </button>
+              </div>
+            </div>
+
+            {/* Chat messages area */}
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto px-6 py-4">
+              {/* Timestamp */}
+              <div className="mb-6 flex justify-center">
+                <span className="rounded-full bg-gray-200/80 px-3 py-1 text-xs text-gray-500">
+                  {formatDate(activeEntry.submission.createdAt)}
+                </span>
+              </div>
+
+              {/* Initial submission as incoming message */}
+              <div className="mb-4 flex items-start gap-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
+                  {getInitials(
+                    activeEntry.submission.firstName,
+                    activeEntry.submission.lastName
+                  )}
+                </div>
+                <div className="max-w-md">
+                  <div className="rounded-2xl rounded-tl-sm bg-white px-4 py-2.5 shadow-sm">
+                    <p className="text-sm text-gray-800">
+                      {activeEntry.submission.additionalDetails ||
+                        `Hi, I need help with ${activeEntry.submission.helpTopic || "something"}.`}
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* AI suggestion card (if applicable) */}
+              {activeEntry.submission.helpTopic && (
+                <div className="mb-4 flex items-start gap-2">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-100 text-xs text-teal-600">
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
+                    </svg>
+                  </div>
+                  <p className="text-xs italic text-teal-600">
+                    Grace (AI) is looking for the best resource...
+                  </p>
+                </div>
+              )}
+
+              {/* Sent messages */}
+              {(messages[activeEntry.submission.id] ?? []).map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`mb-4 flex items-end gap-2 ${
+                    msg.sender === "user" ? "flex-row-reverse" : ""
+                  }`}
+                >
+                  {msg.sender === "user" ? (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
+                      JD
+                    </div>
+                  ) : (
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">
+                      {getInitials(
+                        activeEntry.submission.firstName,
+                        activeEntry.submission.lastName
+                      )}
+                    </div>
+                  )}
+                  <div className="max-w-md">
+                    <div
+                      className={`rounded-2xl px-4 py-2.5 shadow-sm ${
+                        msg.sender === "user"
+                          ? "rounded-tr-sm bg-gray-900 text-white"
+                          : "rounded-tl-sm bg-white text-gray-800"
+                      }`}
+                    >
+                      <p className="text-sm">{msg.text}</p>
+                    </div>
+                    <p
+                      className={`mt-1 text-[11px] text-gray-400 ${
+                        msg.sender === "user" ? "text-right" : ""
+                      }`}
+                    >
+                      {formatMessageTime(msg.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Empty state if no messages yet */}
+              {(messages[activeEntry.submission.id] ?? []).length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 text-center">
+                  <p className="text-xs text-gray-400">
+                    Send a test message below
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Chat input area */}
+            <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+              {/* Quick action pills */}
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50"
+                >
+                  <svg className="h-3 w-3 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
+                  </svg>
+                  Service Times
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50"
+                >
+                  <svg className="h-3 w-3 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
+                  </svg>
+                  Benevolence Process
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50"
+                >
+                  <svg className="h-3 w-3 text-teal-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
+                  </svg>
+                  Prayer Commitment
+                </button>
+              </div>
+
+              {/* Reply/Notes tabs */}
+              <div className="mb-2 flex items-center gap-4 border-b border-gray-100 pb-2">
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 text-xs font-medium text-gray-900"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  Reply
+                </button>
+                <button
+                  type="button"
+                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Notes
+                </button>
+              </div>
+
+              {/* Input field */}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    placeholder="Write a reply via SMS..."
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 placeholder-gray-400 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+                  />
+                </div>
+              </div>
+
+              {/* Bottom actions */}
+              <div className="mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-400">
-                    {formatDate(activeEntry.submission.createdAt)}
-                  </span>
-                  <button
-                    type="button"
-                    disabled
-                    className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500"
-                  >
-                    Assign
+                  <button type="button" className="text-gray-400 hover:text-gray-600">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
                   </button>
+                  <button type="button" className="text-gray-400 hover:text-gray-600">
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSendMessage}
+                  disabled={!messageInput.trim()}
+                  className="flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Send
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+            Select a conversation to view messages.
+          </div>
+        )}
+      </section>
+
+      {/* Profile info panel (right) */}
+      <aside className="w-80 shrink-0 overflow-y-auto bg-white">
+        {activeEntry ? (
+          <div className="p-5">
+            {/* Profile header */}
+            <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 text-center shadow-sm">
+              <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100 text-xl font-semibold text-purple-700 ring-4 ring-purple-50">
+                {getInitials(
+                  activeEntry.submission.firstName,
+                  activeEntry.submission.lastName
+                )}
+              </div>
+              <p className="text-base font-semibold text-gray-900">
+                {activeEntry.submission.firstName} {activeEntry.submission.lastName}
+              </p>
+              <p className="text-xs uppercase tracking-widest text-gray-400">
+                Profile
+              </p>
+              <p className="mt-1 text-sm text-gray-500">{activeEntry.submission.email}</p>
+            </div>
+
+            {/* Topic tag */}
+            {activeEntry.submission.helpTopic ? (
+              <div className="mb-4 text-center">
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
+                    resolveTagId(activeEntry.submission.helpTopic) ?? "other"
+                  )}`}
+                >
+                  {activeEntry.submission.helpTopic}
+                </span>
+              </div>
+            ) : null}
+
+            {/* Contact info */}
+            <div className="mb-5 rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+              <p className="mb-3 text-xs uppercase tracking-widest text-gray-400">
+                Contact
+              </p>
+              <div className="space-y-3 text-sm text-gray-700">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">
+                    Phone
+                  </span>
+                  <span className="font-medium">{formatPhone(activeEntry.submission)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">
+                    Campus
+                  </span>
+                  <span className="font-medium">
+                    {activeEntry.submission.primaryCampus || "Not shared"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">
+                    Submissions
+                  </span>
+                  <span className="font-medium">
+                    {submissionsByEmail[activeEntry.submission.email] ?? 1}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs uppercase tracking-wide text-gray-400">
+                    Regular
+                  </span>
+                  <span className="font-medium">
+                    {activeEntry.submission.regularAttender ? "Yes" : "No"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="px-6 py-5">
-              {/* Topic tag */}
-              {activeEntry.submission.helpTopic ? (
-                <div className="mb-4">
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
-                      resolveTagId(activeEntry.submission.helpTopic) ?? "other"
-                    )}`}
-                  >
-                    {activeEntry.submission.helpTopic}
-                  </span>
-                </div>
-              ) : null}
-
-              {/* Message / Details */}
-              {activeEntry.submission.additionalDetails ? (
-                <div className="mb-5 text-sm leading-relaxed text-gray-700">
-                  {activeEntry.submission.additionalDetails}
-                </div>
-              ) : (
-                <p className="mb-5 text-sm text-gray-400">
-                  No additional details provided.
-                </p>
-              )}
-
-              {/* Contact info grid */}
-              <div className="mb-5 grid gap-4 text-sm sm:grid-cols-2">
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">
-                    Phone
-                  </p>
-                  <p className="mt-1 text-gray-700">
-                    {formatPhone(activeEntry.submission)}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">
-                    Campus
-                  </p>
-                  <p className="mt-1 text-gray-700">
-                    {activeEntry.submission.primaryCampus || "Not shared"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">
-                    Submissions
-                  </p>
-                  <p className="mt-1 text-gray-700">
-                    {submissionsByEmail[activeEntry.submission.email] ?? 1}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-400">
-                    Regular attender
-                  </p>
-                  <p className="mt-1 text-gray-700">
-                    {activeEntry.submission.regularAttender ? "Yes" : "No"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Tags */}
-              <div className="mb-5 flex flex-wrap items-center gap-1.5">
+            {/* Tags */}
+            <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4">
+              <p className="mb-2 text-xs uppercase tracking-widest text-gray-400">
+                Tags
+              </p>
+              <div className="flex flex-wrap gap-1.5">
                 {activeEntry.tags.length > 0 ? (
                   activeEntry.tags.map((tag) => {
                     const label =
@@ -298,40 +633,40 @@ export default function PeopleProfilesClient({
                   </span>
                 )}
               </div>
+            </div>
 
-              {/* Notes */}
-              <div className="border-t border-gray-100 pt-5">
-                <label
-                  htmlFor={`notes-${activeEntry.submission.id}`}
-                  className="text-xs font-medium uppercase tracking-wide text-gray-400"
-                >
-                  Internal notes
-                </label>
-                <textarea
-                  id={`notes-${activeEntry.submission.id}`}
-                  value={notes[activeEntry.submission.id] ?? ""}
-                  onChange={(event) =>
-                    setNotes((prev) => ({
-                      ...prev,
-                      [activeEntry.submission.id]: event.target.value,
-                    }))
-                  }
-                  rows={4}
-                  placeholder="Add internal notes for this profile..."
-                  className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
-                />
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Notes are saved locally in this browser.
-                </p>
-              </div>
+            {/* Notes */}
+            <div className="rounded-2xl border border-gray-100 bg-white p-4">
+              <label
+                htmlFor={`notes-${activeEntry.submission.id}`}
+                className="text-xs font-medium uppercase tracking-widest text-gray-400"
+              >
+                Internal notes
+              </label>
+              <textarea
+                id={`notes-${activeEntry.submission.id}`}
+                value={notes[activeEntry.submission.id] ?? ""}
+                onChange={(event) =>
+                  setNotes((prev) => ({
+                    ...prev,
+                    [activeEntry.submission.id]: event.target.value,
+                  }))
+                }
+                rows={4}
+                placeholder="Add internal notes..."
+                className="mt-2 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+              />
+              <p className="mt-1 text-[11px] text-gray-400">
+                Notes are saved locally.
+              </p>
             </div>
           </div>
         ) : (
-          <div className="flex min-h-[300px] items-center justify-center text-sm text-gray-500">
+          <div className="flex h-full items-center justify-center text-sm text-gray-500">
             Select a profile to view details.
           </div>
         )}
-      </section>
+      </aside>
     </div>
   );
 }

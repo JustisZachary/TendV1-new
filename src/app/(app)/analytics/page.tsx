@@ -238,8 +238,8 @@ export default async function AnalyticsPage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+    <>
+      <div className="border border-gray-200 bg-white p-8 shadow-sm">
         <p className="text-xs uppercase tracking-widest text-gray-400">
           Dashboard
         </p>
@@ -249,188 +249,190 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900">
-            People + submission reporting
-          </h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Profiles tracked
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">
-                {uniqueProfiles}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Submissions
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">
-                {submissions.length}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Avg response time
-              </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
-                {formatDuration(averageResolutionMs)}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Based on latest update timestamp.
-              </p>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Avg time to resolution
-              </p>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
-                {formatDuration(averageResolutionMs)}
-              </p>
-              <p className="mt-1 text-xs text-gray-500">
-                Based on latest update timestamp.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Tag + time insights
-          </h2>
-          <div className="mt-4 space-y-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Top tags
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {topTags.length > 0 ? (
-                  topTags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
-                        (tag.id in TAG_STYLES ? tag.id : "other") as keyof typeof TAG_STYLES
-                      )}`}
-                    >
-                      {tag.label} · {tag.count}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    No tags have been applied yet.
-                  </span>
-                )}
+      <div className="flex flex-col gap-6 px-6 pb-6">
+        <section className="grid gap-6 lg:grid-cols-2">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900">
+              People + submission reporting
+            </h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Profiles tracked
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {uniqueProfiles}
+                </p>
               </div>
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Busiest submission hours
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {busiestHours.length > 0 ? (
-                  busiestHours.map((entry) => (
-                    <span
-                      key={entry.hour}
-                      className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700"
-                    >
-                      {formatHourLabel(entry.hour)} · {entry.count}
-                    </span>
-                  ))
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Not enough data to determine peak times.
-                  </span>
-                )}
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Submissions
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-gray-900">
+                  {submissions.length}
+                </p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">
-            Keyword category metrics
-          </h2>
-          <span className="text-xs text-gray-500">
-            {totalRequests} total requests
-          </span>
-        </div>
-
-        <div className="tag-metrics mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
-          <div className="flex items-center justify-center">
-            <svg
-              className="h-48 w-48"
-              viewBox="0 0 200 200"
-              role="img"
-              aria-label="Keyword category distribution"
-            >
-              {totalRequests === 0 ? (
-                <circle cx="100" cy="100" r={radius} fill="#e5e7eb" />
-              ) : (
-                slices.map((slice) => (
-                  <g key={slice.id} className="pie-slice-group">
-                    <path
-                      d={arcPath(slice.startAngle, slice.endAngle)}
-                      fill={slice.color}
-                      className="pie-slice-path"
-                      data-tag={slice.id}
-                    >
-                    <title>
-                      {slice.label}: {slice.count} request
-                      {slice.count === 1 ? "" : "s"} ({slice.percentage}%)
-                    </title>
-                    </path>
-                  </g>
-                ))
-              )}
-              <circle
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="none"
-                stroke="white"
-                strokeWidth="2"
-              />
-            </svg>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {categoryTotals.map((category) => (
-              <div
-                key={category.id}
-                className={`metric-card group relative rounded-xl border bg-white p-4 ${tagMetricStyles[category.id].border}`}
-                data-tag={category.id}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${tagMetricStyles[category.id].dot}`}
-                    aria-hidden="true"
-                  />
-                  <p
-                    className={`text-xs font-semibold uppercase tracking-wide ${tagMetricStyles[category.id].text}`}
-                  >
-                    {category.label}
-                  </p>
-                </div>
-                <p
-                  className={`mt-2 text-2xl font-semibold ${tagMetricStyles[category.id].text}`}
-                >
-                  {category.percentage}%
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Avg response time
+                </p>
+                <p className="mt-1 text-lg font-semibold text-gray-900">
+                  {formatDuration(averageResolutionMs)}
                 </p>
                 <p className="mt-1 text-xs text-gray-500">
-                  {category.count} request{category.count === 1 ? "" : "s"} tagged
+                  Based on latest update timestamp.
                 </p>
-                <div className="pointer-events-none absolute left-4 top-3 hidden -translate-y-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700 shadow-sm group-hover:block">
-                  {category.count} request{category.count === 1 ? "" : "s"} •{" "}
-                  {category.percentage}% of total
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Avg time to resolution
+                </p>
+                <p className="mt-1 text-lg font-semibold text-gray-900">
+                  {formatDuration(averageResolutionMs)}
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Based on latest update timestamp.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Tag + time insights
+            </h2>
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Top tags
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {topTags.length > 0 ? (
+                    topTags.map((tag) => (
+                      <span
+                        key={tag.id}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${getTagClasses(
+                          (tag.id in TAG_STYLES ? tag.id : "other") as keyof typeof TAG_STYLES
+                        )}`}
+                      >
+                        {tag.label} · {tag.count}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      No tags have been applied yet.
+                    </span>
+                  )}
                 </div>
               </div>
-            ))}
+              <div>
+                <p className="text-xs uppercase tracking-wide text-gray-400">
+                  Busiest submission hours
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {busiestHours.length > 0 ? (
+                    busiestHours.map((entry) => (
+                      <span
+                        key={entry.hour}
+                        className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700"
+                      >
+                        {formatHourLabel(entry.hour)} · {entry.count}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      Not enough data to determine peak times.
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
-    </div>
+        </section>
+
+        <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Keyword category metrics
+            </h2>
+            <span className="text-xs text-gray-500">
+              {totalRequests} total requests
+            </span>
+          </div>
+
+          <div className="tag-metrics mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
+            <div className="flex items-center justify-center">
+              <svg
+                className="h-48 w-48"
+                viewBox="0 0 200 200"
+                role="img"
+                aria-label="Keyword category distribution"
+              >
+                {totalRequests === 0 ? (
+                  <circle cx="100" cy="100" r={radius} fill="#e5e7eb" />
+                ) : (
+                  slices.map((slice) => (
+                    <g key={slice.id} className="pie-slice-group">
+                      <path
+                        d={arcPath(slice.startAngle, slice.endAngle)}
+                        fill={slice.color}
+                        className="pie-slice-path"
+                        data-tag={slice.id}
+                      >
+                      <title>
+                        {slice.label}: {slice.count} request
+                        {slice.count === 1 ? "" : "s"} ({slice.percentage}%)
+                      </title>
+                      </path>
+                    </g>
+                  ))
+                )}
+                <circle
+                  cx="100"
+                  cy="100"
+                  r={radius}
+                  fill="none"
+                  stroke="white"
+                  strokeWidth="2"
+                />
+              </svg>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {categoryTotals.map((category) => (
+                <div
+                  key={category.id}
+                  className={`metric-card group relative rounded-xl border bg-white p-4 ${tagMetricStyles[category.id].border}`}
+                  data-tag={category.id}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${tagMetricStyles[category.id].dot}`}
+                      aria-hidden="true"
+                    />
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wide ${tagMetricStyles[category.id].text}`}
+                    >
+                      {category.label}
+                    </p>
+                  </div>
+                  <p
+                    className={`mt-2 text-2xl font-semibold ${tagMetricStyles[category.id].text}`}
+                  >
+                    {category.percentage}%
+                  </p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    {category.count} request{category.count === 1 ? "" : "s"} tagged
+                  </p>
+                  <div className="pointer-events-none absolute left-4 top-3 hidden -translate-y-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700 shadow-sm group-hover:block">
+                    {category.count} request{category.count === 1 ? "" : "s"} •{" "}
+                    {category.percentage}% of total
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

@@ -192,8 +192,8 @@ export default function AppLayout({
             </a>
           </div>
         </aside>
-        <main className="min-h-screen px-6 py-8">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <main className="min-h-screen flex-1 overflow-hidden">
+          {children}
         </main>
       </div>
     </div>

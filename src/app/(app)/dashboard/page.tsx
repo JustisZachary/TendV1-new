@@ -54,30 +54,22 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
   );
 
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-4">
-      <div>
-        <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
-          Inbox
-        </p>
-      </div>
-
-      <div className="overflow-hidden rounded-2xl">
-        {submissions.length === 0 ? (
-          <div className="p-8 text-center text-sm text-gray-500">
-            {supabase
-              ? "No requests match this tag yet."
-              : "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or use Formspree for form submissions."}
-          </div>
-        ) : (
-          <PeopleProfilesClient
-            submissions={submissions}
-            submissionsByEmail={submissionsByEmail}
-            selectedTag={selectedTag}
-            selectedSort={selectedSort}
-            basePath="/dashboard"
-          />
-        )}
-      </div>
+    <div className="h-full w-full">
+      {submissions.length === 0 ? (
+        <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gray-500">
+          {supabase
+            ? "No requests match this tag yet."
+            : "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or use Formspree for form submissions."}
+        </div>
+      ) : (
+        <PeopleProfilesClient
+          submissions={submissions}
+          submissionsByEmail={submissionsByEmail}
+          selectedTag={selectedTag}
+          selectedSort={selectedSort}
+          basePath="/dashboard"
+        />
+      )}
     </div>
   );
 }
