@@ -8,10 +8,10 @@ export async function POST(request: Request) {
     .json()
     .catch(() => ({ email: "", password: "" }));
   const masterPassword = "Tether";
+  const normalizedEmail = typeof email === "string" ? email.trim() : "";
 
   if (
-    typeof email !== "string" ||
-    email.trim().length === 0 ||
+    normalizedEmail.length === 0 ||
     typeof password !== "string" ||
     password !== masterPassword
   ) {
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const response = NextResponse.json({ ok: true });
   response.cookies.set({
     name: COOKIE_NAME,
-    value: "1",
+    value: normalizedEmail,
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

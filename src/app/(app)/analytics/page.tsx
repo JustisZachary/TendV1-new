@@ -1,23 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import { TagId, TAG_CATEGORIES, parseTagString } from "@/lib/tags";
+import { mockSubmissions } from "@/lib/mockSubmissions";
+import { getLoggedInEmail, isAdminEmail, isTestEmail } from "@/lib/auth";
 
 import { getTagClasses, resolveTagId, TAG_STYLES } from "../people/peopleHelpers";
+import AnalyticsMetricsChart from "./AnalyticsMetricsChart";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-const polarToCartesian = (
-  centerX: number,
-  centerY: number,
-  radius: number,
-  angleInDegrees: number
-) => {
-  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
-  return {
-    x: centerX + radius * Math.cos(angleInRadians),
-    y: centerY + radius * Math.sin(angleInRadians),
-  };
-};
 
 type SubmissionMetrics = {
   tags: string | null;
@@ -25,6 +15,8 @@ type SubmissionMetrics = {
   updatedAt: string;
   helpTopic: string | null;
   email: string | null;
+  source: string | null;
+  primaryCampus: string | null;
 };
 
 const formatHourLabel = (hour: number) => {
@@ -51,19 +43,37 @@ const formatDuration = (milliseconds: number) => {
 };
 
 export default async function AnalyticsPage() {
+  const loggedInEmail = await getLoggedInEmail();
+  const showRealData = isAdminEmail(loggedInEmail);
+  const showMockData = isTestEmail(loggedInEmail);
+
   let submissions: SubmissionMetrics[] = [];
 
-  if (supabase) {
+  if (showRealData && supabase) {
     const { data, error } = await supabase
       .from("Submission")
-      .select("tags, createdAt, updatedAt, helpTopic, email")
+      .select("tags, createdAt, updatedAt, helpTopic, email, primaryCampus")
       .order("createdAt", { ascending: false });
 
     if (error && process.env.NODE_ENV !== "production") {
       console.warn("AnalyticsPage: failed to load submissions.", error);
     } else {
-      submissions = data ?? [];
+      // Real data doesn't have source field, default to "form"
+      submissions = (data ?? []).map((row) => ({
+        ...row,
+        source: "form",
+      }));
     }
+  } else if (showMockData) {
+    submissions = mockSubmissions.map((submission) => ({
+      tags: submission.tags,
+      createdAt: submission.createdAt,
+      updatedAt: submission.updatedAt,
+      helpTopic: submission.helpTopic,
+      email: submission.email,
+      source: submission.source ?? "form",
+      primaryCampus: submission.primaryCampus,
+    }));
   }
 
   const submissionTags: TagId[][] = submissions.map((submission) => {
@@ -135,107 +145,37 @@ export default async function AnalyticsPage() {
       ? resolutionDurations.reduce((sum, value) => sum + value, 0) /
         resolutionDurations.length
       : 0;
-  const tagMetricStyles: Record<
-    TagId,
-    { text: string; border: string; dot: string; slice: string }
-  > = {
-    marriage: {
-      text: "text-red-700",
-      border: "border-red-200",
-      dot: "bg-red-500",
-      slice: "#dc2626",
-    },
-    finances: {
-      text: "text-blue-700",
-      border: "border-blue-200",
-      dot: "bg-blue-500",
-      slice: "#2563eb",
-    },
-    "spiritual-health": {
-      text: "text-purple-700",
-      border: "border-purple-200",
-      dot: "bg-purple-500",
-      slice: "#7e22ce",
-    },
-    "mental-health": {
-      text: "text-green-700",
-      border: "border-green-200",
-      dot: "bg-green-500",
-      slice: "#16a34a",
-    },
-    "faith-questions": {
-      text: "text-yellow-700",
-      border: "border-yellow-200",
-      dot: "bg-yellow-400",
-      slice: "#facc15",
-    },
-    other: {
-      text: "text-gray-600",
-      border: "border-gray-200",
-      dot: "bg-gray-400",
-      slice: "#6b7280",
-    },
-  };
-  const pieCategories = TAG_CATEGORIES.filter(
-    (category) => category.id !== "other"
-  );
-  const tagCounts = pieCategories.reduce<Record<TagId, number>>(
-    (acc, category) => {
-      acc[category.id] = 0;
+
+  // Calculate tag counts for the metrics chart
+  const tagCounts = submissions.reduce<Record<string, number>>(
+    (acc, submission) => {
+      const tags = parseTagString(submission.tags);
+      tags.forEach((tag) => {
+        acc[tag] = (acc[tag] ?? 0) + 1;
+      });
       return acc;
     },
-    {} as Record<TagId, number>
+    {}
   );
-  submissionTags.forEach((tags) => {
-    tags.forEach((tag) => {
-      if (tagCounts[tag] !== undefined) {
-        tagCounts[tag] += 1;
-      }
-    });
-  });
-  const totalTaggedCount = Object.values(tagCounts).reduce(
-    (sum, count) => sum + count,
-    0
-  );
-  const categoryTotals = pieCategories.map((category) => {
-    const count = tagCounts[category.id] ?? 0;
 
-    return {
-      ...category,
-      color: tagMetricStyles[category.id].slice,
-      count,
-      percentage: totalTaggedCount
-        ? Math.round((count / totalTaggedCount) * 100)
-        : 0,
-      share: totalTaggedCount ? count / totalTaggedCount : 0,
-    };
-  });
-  const slices = categoryTotals.map((category) => ({
-    ...category,
-    startAngle: 0,
-    endAngle: 0,
-  }));
-  let currentAngle = 0;
-  slices.forEach((slice) => {
-    slice.startAngle = currentAngle;
-    slice.endAngle = currentAngle + slice.share * 360;
-    currentAngle = slice.endAngle;
-  });
-
-  const center = 100;
-  const radius = 88;
-  const arcPath = (startAngle: number, endAngle: number) => {
-    const start = polarToCartesian(center, center, radius, endAngle);
-    const end = polarToCartesian(center, center, radius, startAngle);
-    const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-    return [
-      `M ${center} ${center}`,
-      `L ${start.x} ${start.y}`,
-      `A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y}`,
-      "Z",
-    ].join(" ");
-  };
+  const weekdayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const weekdayCounts = submissions.reduce<number[]>((acc, submission) => {
+    const createdAt = new Date(submission.createdAt);
+    if (!Number.isNaN(createdAt.getTime())) {
+      const dayIndex = createdAt.getDay(); // 0=Sun..6=Sat
+      const normalizedIndex = (dayIndex + 6) % 7; // shift to Mon..Sun
+      acc[normalizedIndex] += 1;
+    }
+    return acc;
+  }, Array.from({ length: 7 }, () => 0));
+  const maxWeekdayCount = Math.max(1, ...weekdayCounts);
+  const chartPoints = weekdayCounts
+    .map((count, index) => {
+      const x = 10 + index * (680 / 6);
+      const y = 180 - (count / maxWeekdayCount) * 140;
+      return `${x},${y}`;
+    })
+    .join(" ");
 
   return (
     <>
@@ -279,9 +219,6 @@ export default async function AnalyticsPage() {
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {formatDuration(averageResolutionMs)}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  Based on latest update timestamp.
-                </p>
               </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-400">
@@ -289,9 +226,6 @@ export default async function AnalyticsPage() {
                 </p>
                 <p className="mt-1 text-lg font-semibold text-gray-900">
                   {formatDuration(averageResolutionMs)}
-                </p>
-                <p className="mt-1 text-xs text-gray-500">
-                  Based on latest update timestamp.
                 </p>
               </div>
             </div>
@@ -353,85 +287,86 @@ export default async function AnalyticsPage() {
         <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-900">
-              Keyword category metrics
+              Workload over time
             </h2>
-            <span className="text-xs text-gray-500">
-              {totalRequests} total requests
-            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600"
+              >
+                New conversations
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600"
+              >
+                Compare
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-gray-200 bg-white px-2.5 py-1.5"
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="h-4 w-4 text-gray-500"
+                  fill="currentColor"
+                >
+                  <path d="M3 14a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1h-2v1H5v-1H3v1zm7-12a1 1 0 0 0-1 1v6.586L7.707 8.293a1 1 0 0 0-1.414 1.414l3 3a1 1 0 0 0 1.414 0l3-3a1 1 0 1 0-1.414-1.414L11 9.586V3a1 1 0 0 0-1-1z" />
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <div className="tag-metrics mt-6 grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
-            <div className="flex items-center justify-center">
-              <svg
-                className="h-48 w-48"
-                viewBox="0 0 200 200"
-                role="img"
-                aria-label="Keyword category distribution"
-              >
-                {totalRequests === 0 ? (
-                  <circle cx="100" cy="100" r={radius} fill="#e5e7eb" />
-                ) : (
-                  slices.map((slice) => (
-                    <g key={slice.id} className="pie-slice-group">
-                      <path
-                        d={arcPath(slice.startAngle, slice.endAngle)}
-                        fill={slice.color}
-                        className="pie-slice-path"
-                        data-tag={slice.id}
-                      >
-                      <title>
-                        {slice.label}: {slice.count} request
-                        {slice.count === 1 ? "" : "s"} ({slice.percentage}%)
-                      </title>
-                      </path>
-                    </g>
-                  ))
-                )}
-                <circle
-                  cx="100"
-                  cy="100"
-                  r={radius}
-                  fill="none"
-                  stroke="white"
-                  strokeWidth="2"
-                />
-              </svg>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {categoryTotals.map((category) => (
-                <div
-                  key={category.id}
-                  className={`metric-card group relative rounded-xl border bg-white p-4 ${tagMetricStyles[category.id].border}`}
-                  data-tag={category.id}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${tagMetricStyles[category.id].dot}`}
-                      aria-hidden="true"
+          <div className="mt-4 overflow-x-auto">
+            <div className="min-w-[720px]">
+              <div className="relative h-56">
+                <div className="absolute inset-0 grid grid-rows-4 gap-0">
+                  {Array.from({ length: 4 }).map((_, idx) => (
+                    <div
+                      key={`grid-${idx}`}
+                      className="border-t border-dashed border-gray-200"
                     />
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide ${tagMetricStyles[category.id].text}`}
-                    >
-                      {category.label}
-                    </p>
-                  </div>
-                  <p
-                    className={`mt-2 text-2xl font-semibold ${tagMetricStyles[category.id].text}`}
-                  >
-                    {category.percentage}%
-                  </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    {category.count} request{category.count === 1 ? "" : "s"} tagged
-                  </p>
-                  <div className="pointer-events-none absolute left-4 top-3 hidden -translate-y-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[11px] text-gray-700 shadow-sm group-hover:block">
-                    {category.count} request{category.count === 1 ? "" : "s"} •{" "}
-                    {category.percentage}% of total
-                  </div>
+                  ))}
                 </div>
-              ))}
+                <svg
+                  viewBox="0 0 700 200"
+                  className="absolute inset-0 h-full w-full"
+                  role="img"
+                  aria-label="Workload over time"
+                >
+                  <polyline
+                    fill="none"
+                    stroke="#7c3aed"
+                    strokeWidth="2"
+                    points={chartPoints}
+                  />
+                </svg>
+              </div>
+              <div className="mt-3 grid grid-cols-7 text-xs text-gray-400">
+                {weekdayLabels.map((label) => (
+                  <div key={label} className="text-center">
+                    {label}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex items-center justify-center gap-2 text-xs text-gray-500">
+                <span className="h-2 w-2 rounded-full bg-gray-500" />
+                New conversations
+              </div>
             </div>
           </div>
         </section>
+
+        <AnalyticsMetricsChart
+          submissions={submissions.map((s) => ({
+            tags: s.tags,
+            source: s.source,
+            primaryCampus: s.primaryCampus,
+          }))}
+          tagCounts={tagCounts}
+          totalRequests={totalRequests}
+        />
       </div>
     </>
   );

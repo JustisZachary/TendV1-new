@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import type { Submission } from "@/lib/types";
+import { mockMessageSeeds, mockProfile } from "@/lib/mockSubmissions";
 import { TAG_CATEGORIES, type TagId, parseTagString } from "@/lib/tags";
 
 import { getTagClasses, resolveTagId } from "./peopleHelpers";
@@ -15,6 +16,7 @@ type PeopleProfilesClientProps = {
   selectedTag: string;
   selectedSort: "newest" | "oldest";
   basePath?: string;
+  loggedInEmail?: string | null;
 };
 
 type NotesState = Record<string, string>;
@@ -75,12 +77,35 @@ const getInitials = (firstName: string, lastName: string) => {
   return `${first}${last}` || "?";
 };
 
+const getUserDisplayInfo = (email: string | null | undefined) => {
+  if (!email) {
+    return { firstName: "User", lastName: "", initials: "U" };
+  }
+  const normalizedEmail = email.toLowerCase();
+  if (normalizedEmail === mockProfile.email.toLowerCase()) {
+    return {
+      firstName: mockProfile.firstName,
+      lastName: mockProfile.lastName,
+      initials: getInitials(mockProfile.firstName, mockProfile.lastName),
+    };
+  }
+  // For other users, derive from email
+  const localPart = email.split("@")[0] ?? "User";
+  const capitalized = localPart.charAt(0).toUpperCase() + localPart.slice(1);
+  return {
+    firstName: capitalized,
+    lastName: "",
+    initials: localPart.charAt(0).toUpperCase(),
+  };
+};
+
 export default function PeopleProfilesClient({
   submissions,
   submissionsByEmail,
   selectedTag,
   selectedSort,
   basePath,
+  loggedInEmail,
 }: PeopleProfilesClientProps) {
   const [notes, setNotes] = useState<NotesState>({});
   const [messages, setMessages] = useState<MessagesState>({});
@@ -88,6 +113,10 @@ export default function PeopleProfilesClient({
   const [isLoaded, setIsLoaded] = useState(false);
   const [selectedId, setSelectedId] = useState(submissions[0]?.id ?? "");
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const userInfo = getUserDisplayInfo(loggedInEmail);
+  const isTestUser =
+    loggedInEmail?.toLowerCase() === mockProfile.email.toLowerCase();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -116,9 +145,25 @@ export default function PeopleProfilesClient({
       } catch {
         setMessages({});
       }
+    } else if (isTestUser && submissions.length > 0) {
+      // Only seed mock messages for the test user
+      const seededMessages: MessagesState = {};
+      submissions.forEach((submission) => {
+        const seed = mockMessageSeeds[submission.id];
+        if (!seed) {
+          return;
+        }
+        seededMessages[submission.id] = seed.map((message) => ({
+          ...message,
+          timestamp: new Date(message.timestamp),
+        }));
+      });
+      if (Object.keys(seededMessages).length > 0) {
+        setMessages(seededMessages);
+      }
     }
     setIsLoaded(true);
-  }, []);
+  }, [isTestUser, submissions]);
 
   useEffect(() => {
     if (!isLoaded || typeof window === "undefined") {
@@ -347,11 +392,11 @@ export default function PeopleProfilesClient({
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 shadow-sm">
                   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                    JD
+                    {userInfo.initials}
                   </span>
                   <div className="text-right">
                     <p className="text-xs font-semibold text-gray-900">
-                      John Doe
+                      {userInfo.firstName} {userInfo.lastName}
                     </p>
                     <button
                       type="button"
@@ -416,7 +461,7 @@ export default function PeopleProfilesClient({
                 >
                   {msg.sender === "user" ? (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                      JD
+                      {userInfo.initials}
                     </div>
                   ) : (
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600">

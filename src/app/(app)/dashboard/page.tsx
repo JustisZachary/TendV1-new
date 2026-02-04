@@ -1,8 +1,10 @@
 import PeopleProfilesClient from "../people/PeopleProfilesClient";
 
 import type { Submission } from "@/lib/types";
+import { mockSubmissions } from "@/lib/mockSubmissions";
 import { supabase } from "@/lib/supabase";
 import { TAG_CATEGORIES } from "@/lib/tags";
+import { getLoggedInEmail, isAdminEmail, isTestEmail } from "@/lib/auth";
 
 type InboxPageProps = {
   searchParams?: { tag?: string; sort?: string } | Promise<{
@@ -21,9 +23,13 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
       ? TAG_CATEGORIES.find((category) => category.id === selectedTag)?.id
       : null;
 
+  const loggedInEmail = await getLoggedInEmail();
+  const showRealData = isAdminEmail(loggedInEmail);
+  const showMockData = isTestEmail(loggedInEmail);
+
   let submissions: Submission[] = [];
 
-  if (supabase) {
+  if (showRealData && supabase) {
     let query = supabase
       .from("Submission")
       .select("*")
@@ -40,6 +46,8 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     } else {
       submissions = (data ?? []) as Submission[];
     }
+  } else if (showMockData) {
+    submissions = mockSubmissions as Submission[];
   }
 
   const submissionsByEmail = submissions.reduce<Record<string, number>>(
@@ -57,9 +65,9 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
     <div className="h-full w-full">
       {submissions.length === 0 ? (
         <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gray-500">
-          {supabase
-            ? "No requests match this tag yet."
-            : "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY, or use Formspree for form submissions."}
+          {showRealData && !supabase
+            ? "Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY."
+            : "No requests yet. Submit a form to get started."}
         </div>
       ) : (
         <PeopleProfilesClient
@@ -68,6 +76,7 @@ export default async function InboxPage({ searchParams }: InboxPageProps) {
           selectedTag={selectedTag}
           selectedSort={selectedSort}
           basePath="/dashboard"
+          loggedInEmail={loggedInEmail}
         />
       )}
     </div>

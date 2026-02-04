@@ -14,12 +14,12 @@ type AnalyticsSidebarProps = {
 };
 
 const navItems = [
-  { label: "Team Performance", href: "/analytics" },
-  { label: "Workload", href: "/analytics/workload" },
-  { label: "Response", href: "/analytics/response" },
-  { label: "People Satisfaction", href: "/analytics/people-satisfaction" },
-  { label: "Time Goals", href: "/analytics/time-goals" },
-];
+  { label: "Team Performance", href: "/analytics/workload", icon: "team" },
+  { label: "Workload", href: "/analytics", icon: "workload" },
+  { label: "Response", href: "/analytics/response", icon: "response" },
+  { label: "People Satisfaction", href: "/analytics/people-satisfaction", icon: "satisfaction" },
+  { label: "Time Goals", href: "/analytics/time-goals", icon: "goals" },
+] as const;
 
 export default function AnalyticsSidebar({
   topTags,
@@ -66,14 +66,91 @@ export default function AnalyticsSidebar({
                     isActive ? "bg-white" : "bg-gray-50"
                   }`}
                 >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 20 20"
-                    className="h-3.5 w-3.5 text-gray-500"
-                    fill="currentColor"
-                  >
-                    <path d="M4 10a6 6 0 0 1 12 0v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-4z" />
-                  </svg>
+                  {item.icon === "team" && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 12a4 4 0 1 1 8 0m-8 0a5 5 0 0 0-5 5v2h18v-2a5 5 0 0 0-5-5m-8 0h8"
+                      />
+                    </svg>
+                  )}
+                  {item.icon === "workload" && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M6 20V10M12 20V6M18 20v-4"
+                      />
+                    </svg>
+                  )}
+                  {item.icon === "response" && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 11l2 2 4-4m7 3a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                      />
+                    </svg>
+                  )}
+                  {item.icon === "satisfaction" && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18z"
+                      />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 10h.01M15 10h.01M8.5 14a5 5 0 0 0 7 0"
+                      />
+                    </svg>
+                  )}
+                  {item.icon === "goals" && (
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4 text-gray-500"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M12 3a9 9 0 1 1-9 9 9 9 0 0 1 9-9zm0 4a5 5 0 1 1-5 5 5 5 0 0 1 5-5zm0 3a2 2 0 1 1-2 2 2 2 0 0 1 2-2z"
+                      />
+                    </svg>
+                  )}
                 </span>
                 <span>{item.label}</span>
               </a>
