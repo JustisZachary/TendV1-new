@@ -56,8 +56,18 @@ const formatPhone = (submission: Submission) => {
   if (!submission.phoneNumber) {
     return "Not provided";
   }
-  return `${submission.phoneNumber} (${submission.phoneType || "unknown"})`;
+  const digits = submission.phoneNumber.replace(/\D/g, "");
+  let formatted = submission.phoneNumber;
+  if (digits.length === 10) {
+    formatted = `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  } else if (digits.length === 11 && digits.startsWith("1")) {
+    formatted = `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+  return formatted;
 };
+
+const formatNumber = (value: number) =>
+  new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(value);
 
 const getInitials = (firstName: string, lastName: string) => {
   const first = firstName?.charAt(0)?.toUpperCase() ?? "";
@@ -164,6 +174,15 @@ export default function PeopleProfilesClient({
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
   }, [messages, selectedId]);
+
+  const handleLogout = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    window.localStorage.removeItem(NOTES_STORAGE_KEY);
+    window.localStorage.removeItem(MESSAGES_STORAGE_KEY);
+    window.location.href = "/";
+  };
 
   useEffect(() => {
     if (!selectedId && submissions[0]?.id) {
@@ -326,13 +345,23 @@ export default function PeopleProfilesClient({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-500"
-                >
-                  Assign
-                </button>
+                <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white px-2.5 py-1 shadow-sm">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
+                    JD
+                  </span>
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-gray-900">
+                      John Doe
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="text-[11px] font-medium text-purple-600 hover:text-purple-700"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -429,9 +458,15 @@ export default function PeopleProfilesClient({
             </div>
 
             {/* Chat input area */}
-            <div className="shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+            <div className="relative shrink-0 border-t border-gray-100 bg-white px-4 py-3">
+              <button
+                type="button"
+                className="absolute right-4 top-3 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-purple-600"
+              >
+                Assign
+              </button>
               {/* Quick action pills */}
-              <div className="mb-3 flex flex-wrap gap-2">
+              <div className="mb-3 flex flex-wrap gap-2 pr-20">
                 <button
                   type="button"
                   className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-50"
@@ -567,42 +602,69 @@ export default function PeopleProfilesClient({
             ) : null}
 
             {/* Contact info */}
-            <div className="mb-5 rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
-              <p className="mb-3 text-xs uppercase tracking-widest text-gray-400">
-                Contact
-              </p>
-              <div className="space-y-3 text-sm text-gray-700">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide text-gray-400">
-                    Phone
-                  </span>
-                  <span className="font-medium">{formatPhone(activeEntry.submission)}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide text-gray-400">
-                    Campus
-                  </span>
-                  <span className="font-medium">
-                    {activeEntry.submission.primaryCampus || "Not shared"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide text-gray-400">
-                    Submissions
-                  </span>
-                  <span className="font-medium">
-                    {submissionsByEmail[activeEntry.submission.email] ?? 1}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide text-gray-400">
-                    Regular
-                  </span>
-                  <span className="font-medium">
-                    {activeEntry.submission.regularAttender ? "Yes" : "No"}
-                  </span>
+            <div className="mb-5 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-50 text-purple-700">
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className="h-4 w-4"
+                    fill="currentColor"
+                  >
+                    <path d="M7 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H7zm3 15a1.25 1.25 0 1 1 0-2.5A1.25 1.25 0 0 1 10 17z" />
+                  </svg>
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatPhone(activeEntry.submission)}
+                  </p>
+                  <p className="text-xs text-gray-400">Mobile contact</p>
                 </div>
               </div>
+
+              <div className="mt-4 grid gap-3 border-t border-gray-100 pt-4 sm:grid-cols-2">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-50 text-gray-500">
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 20 20"
+                      className="h-4 w-4"
+                      fill="currentColor"
+                    >
+                      <path d="M10 2a6 6 0 0 1 6 6c0 4.418-6 10-6 10S4 12.418 4 8a6 6 0 0 1 6-6zm0 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {activeEntry.submission.primaryCampus
+                        ? activeEntry.submission.primaryCampus
+                            .replace(/\s*campus\s*/i, "")
+                            .trim()
+                        : "Not shared"}
+                    </p>
+                    <p className="text-xs text-gray-400">Campus</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-50 text-purple-700">
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 20 20"
+                      className="h-4 w-4"
+                      fill="currentColor"
+                    >
+                      <path d="M6 2a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6l4 3V4a2 2 0 0 0-2-2H6z" />
+                    </svg>
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">
+                    {formatNumber(submissionsByEmail[activeEntry.submission.email] ?? 1)}
+                    </p>
+                    <p className="text-xs text-gray-400">Submission</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {/* Tags */}
