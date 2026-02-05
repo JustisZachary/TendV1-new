@@ -91,6 +91,26 @@ export default function AppLayout({
                 />
               </svg>
             </a>
+            <a
+              aria-label="AI chat"
+              className="flex h-11 w-11 items-center justify-center rounded-xl text-gray-400 transition hover:bg-gray-50 hover:text-gray-700"
+              href="/ai-chat"
+            >
+              <svg
+                aria-hidden="true"
+                className="h-6 w-6"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M7 8h10M7 12h6m-5 8-5 3V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H7z"
+                />
+              </svg>
+            </a>
             <div className="my-2 h-px w-8 bg-gray-300" />
             <nav className="flex flex-col items-center gap-0.5" aria-label="Main">
               {navItems.map(({ href, label, path }) => {
